@@ -309,7 +309,7 @@ div.color {
     left: 0;
     top: 0;
     background-image: var(--logo-image);
-    background-size: auto 15rem;
+    background-size: 15rem auto;
     background-position: center;
     background-repeat: no-repeat;
     opacity: 0.7;
