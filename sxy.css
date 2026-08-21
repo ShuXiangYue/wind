@@ -1,0 +1,729 @@
+/* /*
+   Liminal Theme
+   [2023 Wikidot Theme]
+   by Lynch & Etoile
+   Edited by Lambda Core & irisluscinia & hoah2333
+*/
+ 
+@import url('');
+@import url("https://backrooms-wiki.wdfiles.com/local--files/component%3Atheme/normalize-archived.css");
+@import url("https://backrooms-wiki.wdfiles.com/local--files/component%3Atheme/bhl-archived.css");
+@import url("https://backrooms-wiki.wikidot.com/local--files/component:theme/sidebar.css");
+@import url('114,514');
+@import url('');
+body {
+header-color: #114514;
+background-color: #d7effe;
+}
+:root {
+   --white-monochrome: 240,228,255;
+   --text-white-monochrome: 0,128,128;
+   --pale-gray-monochrome: 240,255,255;
+   --light-gray-monochrome: 26,81,122;
+   --gray-monochrome: 26,81,122;
+   --black-monochrome: 17,57,85;
+   --bright-accent: 96,156,193;
+   --medium-accent: 65,141,197;
+   --dark-accent: 65,141,197;
+   --pale-accent: 65,141,197;
+   --alt-accent: 38,105,117;
+   --legacy-accent: 0,128,128;
+   --darker-legacy-accent: 240,248,255;
+   --tranquility-purple: 46,65,58;
+   --onion-beige: 240,248,255;
+   --onion-border-beige: 240,248,255;
+   --table-wood: 96,156,193;
+   --table-border-wood: 47,79,79;
+   --salmon-red: 46,66,58;
+   --salmon-border-red: 240,255,255;
+   --bellpepper-color: 175,238,238;
+   --bellpepper-border-color: 46,65,58;
+}
+/* Content Warning */
+#page-content div#u-adult-warning {
+    width: fit-content;
+    margin: 0 auto 1.25rem;
+    padding: 0.5rem 1rem;
+    border: 3px solid #333;
+    background: #114514;
+    color: #114514;
+    text-align: center;
+    font-weight: bold;
+}
+#page-content div#u-adult-warning > div#u-adult-header {
+    font-size: 300%;
+    text-shadow: 1px 2px 3px rgba(0, 0, 0, .5);
+    color: #901;
+}
+#page-content div#u-adult-warning > div#u-adult-header {
+    font-size: 300%;
+    text-shadow: 1px 2px 3px rgba(0, 0, 0, .5);
+    color: #233;
+}
+/* Content Warning */
+#page-content div#u-adult-warning {
+    width: fit-content;
+    margin: 0 auto 1.25rem;
+    padding: 0.5rem 1rem;
+    border: 3px solid #333;
+    background: #114514;
+    color: #114514;
+    text-align: center;
+    font-weight: bold;
+}
+#page-content div#u-adult-warning > div#u-adult-header {
+    font-size: 300%;
+    text-shadow: 1px 2px 3px rgba(0, 0, 0, .5);
+    color: #901;
+}
+#page-content div#u-adult-warning > div#u-adult-header {
+    font-size: 300%;
+    text-shadow: 1px 2px 3px rgba(0, 0, 0, .5);
+    color: #233;
+}
+:root {
+   --theme-base: "black-highlighter";
+   --theme-id: "liminal";
+   --theme-name: "Liminal Theme";
+   --logo-image: url("http://anrka.wikidot.com/local--files/http:anrka-wikidot-com/33333334.png");
+   --header-title: "繁星塔";
+   --header-subtitle: "你曾眺望过星空";
+   --body-font: proxima-nova, sans-serif;
+   --header-font: 'IBM Plex Mono', '不知道', sans-serif;
+   --title-font: 'Fantasque Sans Mono', monospace;
+   --mono-font: 'Fantasque Sans Mono', monospace;
+   --gradient-header: linear-gradient(to top,
+      rgba(var(--medium-accent)) 0%,
+      rgba(var(--medium-accent), 0.90) 100%
+   );
+   --diagonal-stripes: linear-gradient(transparent 0);
+}
+/*
+#login-status {
+   position: absolute !important;
+}
+#account-options {
+   display: none !important;
+}
+*/
+#skrollr-body {
+   background-image:
+    radial-gradient(circle, rgb(var(--medium-accent)) 50%, transparent 0);
+   background-repeat: repeat;
+   background-size: 0.25em 0.25em;
+   width: 100%;
+   height: 7.5rem;
+}
+ 
+#side-bar .side-block div a img {
+   filter: grayscale(100%);
+}
+ 
+#container {
+   background-image: radial-gradient(circle, rgb(var(--medium-accent), 0.05) 50%, transparent 0);
+   background-size: 0.25em 0.25em;
+   background-repeat: repeat;
+   background-attachment: fixed;
+}
+ 
+div#page-options-bottom-2 > a, div#page-options-bottom > a {
+   border-radius: 0em;
+   -moz-border-radius: 0em;
+   border: none;
+}
+ 
+div#page-options-bottom-2 > a:active, div#page-options-bottom-2 > a:hover, div#page-options-bottom > a:active, div#page-options-bottom > a:hover {
+   border: none;
+}
+ 
+#header, #top-bar {
+   background-attachment: scroll;
+}
+ 
+#header {
+   background-image: none;
+}
+ 
+#header::before {
+   content: "";
+   position: absolute;
+   height: 100%;
+   width: 100%;
+   left: 0;
+   top: 0;
+   background-image: var(--logo-image);
+   background-size: auto 16rem;
+   background-position: center;
+   background-repeat: no-repeat;
+   opacity: 0.4;
+}
+ 
+#header h1, #header h1 a {
+   position: absolute;
+   top: 1rem;
+   margin: 0;
+   width: 100%;
+   display: flex;
+   justify-content: center;
+   z-index: 0;
+}
+ 
+#header h2, #header h2 span, #header h2 span::before {
+   position: absolute;
+   top: 2rem;
+   margin: 0;
+   width: 100%;
+   display: flex;
+   justify-content: center;
+}
+ 
+#header h1 a::before, #header h2 span::before {
+   text-shadow: 0.2rem 0rem 0.3rem 0rem #000424;
+}
+ 
+a.newpage {
+   background: transparent;
+   text-decoration: none
+}
+ 
+a.newpage {
+   color: rgb(var(--newpage-color))
+}
+ 
+blockquote {
+   box-shadow: 0.05rem 0.1rem 0.3rem rgba(0,0,0,.25);
+}
+ 
+.styled-quote {
+   background-color:rgb(var(--pale-gray-monochrome));
+   border-left: 0.5rem solid rgba(var(--gray-monochrome));
+   padding: 0.1rem 1rem;
+   margin: 0.5rem 0 0.5rem 0.25rem;
+   box-shadow: 0.05rem 0.1rem 0.3rem rgba(0,0,0,.25);
+}
+ 
+.dark-styled-quote {
+   background-color:rgb(var(--gray-monochrome));
+   border-left: 0.5rem solid rgba(var(--pale-gray-monochrome));
+   color:rgb(var(--white-monochrome));
+   padding: 0.1rem 1rem;
+   margin: 0.5rem 0 0.5rem 0.25rem;
+   box-shadow: 0.05rem 0.1rem 0.3rem rgba(0,0,0,.25);
+}
+ 
+.dark-styled-quote a{
+color: rgb(var(--swatch-menubg-medium-color));
+}
+ 
+.lightblock {
+   background-color:rgb(var(--white-monochrome));
+   padding: 0.01rem 1rem;
+   margin: 0.5rem 0 0.5rem 0.25rem;
+   box-shadow: 0 0.2rem 0.3rem rgba(0,0,0,.25);
+}
+ 
+.darkblock {
+   background-color:rgb(var(--gray-monochrome));
+   color:rgb(var(--white-monochrome));
+   padding: 0.01rem 1rem;
+   margin: 0.5rem 0 0.5rem 0.25rem;
+   box-shadow: 0 0.2rem 0.3rem rgba(0,0,0,.25);
+}
+ 
+.darkblock a {
+color: rgb(var(--swatch-menubg-medium-color));
+}
+#side-bar div.menu-item a[href*="/backrooms-"]{
+text-align:left !important;
+width: auto !important;
+}
+ 
+.interwiki1 {
+ 
+    background: rgb(237,233,223);
+    margin: 10px 15px;
+    padding: 10px;
+    border: 1px solid rgb(80,77,66);
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(102,0,0,.5);
+    box-sizing: border-box;
+    /*width: 15em;*/
+    width: calc(var(--base-font-size*0.93333*19));
+ 
+}
+ 
+.interwiki1_title {
+ 
+    color: rgb(80,77,66);
+    border-bottom: solid 1px rgb(80,77,66);
+    padding-left: 15px;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    font-size: 8pt;
+    font-weight: bold;
+ 
+}
+ 
+.interwiki1_entry {
+ 
+    position: relative;
+    margin: 2px 0;
+ 
+}
+ 
+.interwiki1_entry p::before {
+ 
+    content: "■";
+    font-size: 9px;
+    color: rgb(80,77,66);
+    position: relative;
+    margin: 0 7px 0 5px;
+    bottom: 3px;
+ 
+}
+ 
+.interwiki1_entry a, .interwiki1_entry a:visited {
+ 
+    font-weight: bold;
+    color: #b01;
+    text-decoration: none;
+    background: transparent;
+ 
+}
+ 
+.interwiki1_entry a:hover {
+ 
+    background-color: transparent;
+    text-decoration: underline;
+ 
+}
+#side-bar div.menu-item.small a {
+    justify-content: center;
+    width: auto;
+    padding: 0 0.25em;
+    text-indent: 0;
+    white-space: nowrap;
+}
+#side-bar div.menu-item a {
+    justify-content: flex-start;
+    padding: 0 0 0 calc(var(--base-font-size)*.93333);
+}
+#side-bar div.menu-item, #side-bar div.menu-item>p {
+    display: flex;
+    flex-shrink: 0;
+    flex-basis: 100%;
+    flex-flow: row wrap;
+    align-items: center;
+    justify-content: flex-start;
+    height: 1.5rem;
+    min-height: 1.5rem;
+    margin: 0;
+    padding: 0;
+    box-shadow: inset 0 calc(var(--sidebar-internal-border-thickness)*-1) 0 0 rgba(var(--sidebar-border-color));
+    font-size: 0;
+}
+#side-bar div.menu-item>:last-child {
+    flex-grow: 2;
+}
+ 
+#side-bar .side-block {
+    margin-top: -0.5rem;
+}
+#side-bar div.menu-item a:not(a:first-child) {
+    border-left: var(--sidebar-internal-border-thickness) solid rgba(var(--swatch-border-color),.08)
+} */
+/* /*
+   Liminal Theme
+   [2023 Wikidot Theme]
+   by Lynch & Etoile
+   Edited by Lambda Core & irisluscinia & hoah2333
+*/
+ 
+@import url('');
+@import url("https://backrooms-wiki.wdfiles.com/local--files/component%3Atheme/normalize-archived.css");
+@import url("https://backrooms-wiki.wdfiles.com/local--files/component%3Atheme/bhl-archived.css");
+@import url("https://backrooms-wiki.wikidot.com/local--files/component:theme/sidebar.css");
+body {
+header-color: #114514;
+background-color: #f1fcff;
+}
+:root {
+   --white-monochrome: 256, 256, 256;
+   --text-white-monochrome: 128,128,0;
+   --pale-gray-monochrome: 157,192,208;
+   --light-gray-monochrome: 154,191,204;
+   --gray-monochrome: 168,209,224;
+   --black-monochrome: 94,136,167;
+   --bright-accent: 168,209,224;
+   --medium-accent: 167,209,223;
+   --dark-accent: 168,209,224;
+   --pale-accent: 94,136,167;
+   --alt-accent: 221,193,174;
+   --legacy-accent: 0,128,128;
+   --darker-legacy-accent: 225, 240, 240;
+   --tranquility-purple: 46,65,58;
+   --onion-beige: 225, 240, 240;
+   --onion-border-beige: 225, 240, 240;
+   --table-wood: 96,156,193;
+   --table-border-wood: 168,209,224;
+   --salmon-red: 46,66,58;
+   --salmon-border-red: 240,255,255;
+   --bellpepper-color: 175,238,238;
+   --bellpepper-border-color: 46,65,58;
+}
+/* Content Warning */
+
+#page-content div#u-adult-warning {
+    width: fit-content;
+    margin: 0 auto 1.25rem;
+    padding: 0.5rem 1rem;
+    border: 3px solid #333;
+    background: #114514;
+    color: #114514;
+    text-align: center;
+    font-weight: bold;
+}
+#page-content div#u-adult-warning > div#u-adult-header {
+    font-size: 300%;
+    text-shadow: 1px 2px 3px rgba(0, 0, 0, .5);
+    color: #901;
+}
+#page-content div#u-adult-warning > div#u-adult-header {
+    font-size: 300%;
+    text-shadow: 1px 2px 3px rgba(0, 0, 0, .5);
+    color: #233;
+}
+/* Content Warning */
+#page-content div#u-adult-warning {
+    width: fit-content;
+    margin: 0 auto 1.25rem;
+    padding: 0.5rem 1rem;
+    border: 3px solid #333;
+    background: #114514;
+    color: #114514;
+    text-align: center;
+    font-weight: bold;
+}
+#page-content div#u-adult-warning > div#u-adult-header {
+    font-size: 300%;
+    text-shadow: 1px 2px 3px rgba(0, 0, 0, .5);
+    color: #901;
+}
+#page-content div#u-adult-warning > div#u-adult-header {
+    font-size: 300%;
+    text-shadow: 1px 2px 3px rgba(0, 0, 0, .5);
+    color: #233;
+}
+:root {
+   --theme-base: "black-highlighter";
+   --theme-id: "liminal";
+   --theme-name: "Liminal Theme";
+   --logo-image: url("http://bookmoon.wikidot.com/local--files/edit/sxy");
+   --header-title: "書香院";
+   --header-subtitle: "待到山花烂漫时";
+   --body-font: proxima-nova, sans-serif;
+   --header-font: 'IBM Plex Mono', '不知道', sans-serif;
+   --title-font: 'Fantasque Sans Mono', monospace;
+   --mono-font: 'Fantasque Sans Mono', monospace;
+   --gradient-header: linear-gradient(to top,
+      rgba(var(--medium-accent)) 0%,
+      rgba(var(--medium-accent), 0.90) 100%
+   );
+   --diagonal-stripes: linear-gradient(transparent 0);
+}
+/*
+#login-status {
+   position: absolute !important;
+}
+#account-options {
+   display: none !important;
+}
+*/
+#skrollr-body {
+   background-color:rgb(var(--gray-monochrome));
+   background-image:linear-gradient(to bottom, rgba(255,255,255,0), rgb(var(--gray-monochrome))), var(--background-image-base);
+   background-repeat: repeat;
+   background-size: 600px;
+   background-color: #fcfaff;
+   width: 100%;
+   height: 7.5rem;
+}
+.mobile-top-bar {
+    box-shadow: 0 0.2rem 0.3rem rgba(0, 0, 0, 0.25);
+border:none;
+outline:none;
+}
+#top-bar {
+    border:none;
+outline:none;
+}
+#side-bar .side-block div a img {
+   filter: grayscale(100%);
+}
+
+
+#search-top-box-input {
+    display: none;
+}
+
+#container {
+   background-image: radial-gradient(circle, rgb(var(--medium-accent), 0.05) 50%, transparent 0);
+   background-size: 0.25em 0.25em;
+   background-repeat: repeat;
+   background-attachment: fixed;
+}
+ 
+div#page-options-bottom-2 > a, div#page-options-bottom > a {
+background-color:rgb(var(--dark-accent));
+   border-color:rgb(var(--gray-monochrome));
+border-radius: 2px;
+   -moz-border-radius: 2px;
+box-shadow: 0 0.2rem 0.3rem rgba(0, 0, 0, .25);
+  
+}
+ 
+#header, #top-bar {
+   background-attachment: scroll;
+}
+ 
+#header {
+   background-image: none;
+}
+ 
+#header::before {
+   content: "";
+   position: absolute;
+   height: 100%;
+   width: 100%;
+   left: 0;
+   top: 0;
+   background-image: var(--logo-image);
+   background-size: auto 16rem;
+   background-position: center;
+   background-repeat: no-repeat;
+   box-shadow: 0 0.2rem 0.3rem rgba(0, 0, 0, .25);
+   opacity: 0.75;
+}
+ 
+#header h1, #header h1 a {
+   position: absolute;
+   top: 1rem;
+   margin: 0;
+   width: 100%;
+   display: flex;
+   justify-content: center;
+   z-index: 0;
+}
+ 
+#header h2, #header h2 span, #header h2 span::before {
+   position: absolute;
+   top: 2rem;
+   margin: 0;
+   width: 100%;
+   display: flex;
+   justify-content: center;
+}
+ 
+#header h1 a::before, #header h2 span::before {
+   text-shadow: 0.2rem 0rem 0.3rem 0rem #000424;
+}
+ 
+a.newpage {
+   background: transparent;
+   text-decoration: none
+}
+ 
+a.newpage {
+   color: rgb(var(--newpage-color))
+}
+ 
+blockquote {
+   box-shadow: 0.05rem 0.1rem 0.3rem rgba(213,223,233,.25);
+}
+ 
+.styled-quote {
+   background-color:rgb(var(--pale-gray-monochrome));
+   border-left: 0.5rem solid rgba(var(--gray-monochrome));
+   padding: 0.1rem 1rem;
+   margin: 0.5rem 0 0.5rem 0.25rem;
+   box-shadow: 0.05rem 0.1rem 0.3rem rgba(213,223,233,.25);
+}
+ 
+.dark-styled-quote {
+   background-color:rgb(var(--gray-monochrome));
+   border-left: 0.5rem solid rgba(var(--pale-gray-monochrome));
+   color:rgb(var(--white-monochrome));
+   padding: 0.1rem 1rem;
+   margin: 0.5rem 0 0.5rem 0.25rem;
+   box-shadow: 0.05rem 0.1rem 0.3rem rgba(213,223,233,.25);
+}
+ 
+.dark-styled-quote a{
+color: rgb(var(--swatch-menubg-medium-color));
+}
+ 
+.lightblock {
+   background-color:rgb(var(--white-monochrome));
+   padding: 0.01rem 1rem;
+   margin: 0.5rem 0 0.5rem 0.25rem;
+   box-shadow: 0 0.2rem 0.3rem rgba(213,223,233,.25);
+}
+ 
+.darkblock {
+   background-color:rgb(var(--gray-monochrome));
+   color:rgb(var(--white-monochrome));
+   padding: 0.01rem 1rem;
+   margin: 0.5rem 0 0.5rem 0.25rem;
+   box-shadow: 0 0.2rem 0.3rem rgba(213,223,233,.25);
+}
+ 
+.darkblock a {
+color: rgb(var(--swatch-menubg-medium-color));
+}
+#side-bar div.menu-item a[href*="/backrooms-"]{
+text-align:left !important;
+width: auto !important;
+}
+ 
+.interwiki1 {
+ 
+    background: rgb(237,233,223);
+    margin: 10px 15px;
+    padding: 10px;
+    border: 1px solid rgb(80,77,66);
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(102,0,0,.5);
+    box-sizing: border-box;
+    /*width: 15em;*/
+    width: calc(var(--base-font-size*0.93333*19));
+ 
+}
+ 
+.interwiki1_title {
+ 
+    color: rgb(137, 204, 206);
+    border-bottom: solid 1px rgb(137, 204, 206);
+    padding-left: 15px;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    font-size: 8pt;
+    font-weight: bold;
+ 
+}
+ 
+.interwiki1_entry {
+ 
+    position: relative;
+    margin: 2px 0;
+ 
+}
+ 
+.interwiki1_entry p::before {
+ 
+    content: "■";
+    font-size: 9px;
+    color: rgb(137, 204, 206);
+    position: relative;
+    margin: 0 7px 0 5px;
+    bottom: 3px;
+ 
+}
+ 
+.interwiki1_entry a, .interwiki1_entry a:visited {
+ 
+    font-weight: bold;
+    color: #b01;
+    text-decoration: none;
+    background: transparent;
+ 
+}
+ 
+.interwiki1_entry a:hover {
+ 
+    background-color: transparent;
+    text-decoration: underline;
+ 
+}
+#side-bar div.menu-item.small a {
+    justify-content: center;
+    width: auto;
+    padding: 0 0.25em;
+    text-indent: 0;
+    white-space: nowrap;
+}
+#side-bar div.menu-item a {
+    justify-content: flex-start;
+    padding: 0 0 0 calc(var(--base-font-size)*.93333);
+}
+#side-bar div.menu-item, #side-bar div.menu-item>p {
+    display: flex;
+    flex-shrink: 0;
+    flex-basis: 100%;
+    flex-flow: row wrap;
+    align-items: center;
+    justify-content: flex-start;
+    height: 1.5rem;
+    min-height: 1.5rem;
+    margin: 0;
+    padding: 0;
+    box-shadow: inset 0 calc(var(--sidebar-internal-border-thickness)*-1) 0 0 rgba(var(--sidebar-border-color));
+    font-size: 0;
+}
+#side-bar div.menu-item>:last-child {
+    flex-grow: 2;
+}
+ 
+#side-bar .side-block {
+    margin-top: -0.5rem;
+}
+#side-bar div.menu-item a:not(a:first-child) {
+    border-left: var(--sidebar-internal-border-thickness) solid rgba(var(--swatch-border-color),.08)
+} */
+#skrollr-body {
+    background-color: #fcfaff;
+    background-image: url("https://tg.xmxx.fun/i/20260822j4zwpxt0hejkxby5.png");
+    background-size: 600px;
+}
+#skrollr-body {
+    background-color: #fcfaff;
+    background-image: url("https://tg.xmxx.fun/i/20260822j4zwpxt0hejkxby5.png");
+    background-size: 600px;
+}
+:root {
+   --theme-base: "black-highlighter";
+   --theme-id: "advanced-splinter";
+   --theme-name: "Advanced Splinter Theme";
+ 
+   --logo-image: url("http://bookmoon.wikidot.com/local--files/edit/sxy2");
+   --header-title: "書香院";
+   --header-subtitle: "待到山花烂漫时";
+ }
+ 
+    #header {
+     height: var(--header-height-on-mobile);
+     background-image: url("");
+     background-image: var(--logo-image);
+     --size: calc(var(--final-header-height-on-mobile) + 1.5rem);
+     --y-offset: 3rem;
+     background-position:
+     calc((var(--header-height-on-mobile) - 0.75rem) - var(--size)) calc(((var(--size) * -1) + var(--header-height-on-mobile) + var(--y-offset)) / 2);
+     background-size: var(--size), 100% var(--header-height-on-mobile);
+     background-repeat: no-repeat, repeat;
+     width: 100vw;
+     margin: 0;
+     position: sticky;
+     top: calc(var(--header-height-on-mobile) * -1);
+    }
+
+}
+
+#header h1 a::before{
+
+   letter-spacing: 0.5rem;
+
+}
+
+ #header::before {
+
+background-image: none;
+
