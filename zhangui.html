@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>站规</title>
+    <style>
+        /* 样式保持不变 */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Georgia', serif; background: #faf7f2; color: #2c2c2c; min-height: 100vh; display: flex; justify-content: center; padding: 40px 20px; line-height: 1.8; }
+        .container { max-width: 820px; width: 100%; background: #fff; padding: 50px 60px; border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.06), 0 6px 20px rgba(0,0,0,0.03); transition: opacity 0.3s ease; }
+        .article-header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #f0ebe4; padding-bottom: 30px; }
+        .article-header h1 { font-size: 34px; font-weight: 700; letter-spacing: -0.5px; color: #1e1e1e; margin-bottom: 10px; }
+        .article-header .meta { font-size: 14px; color: #b0a394; font-family: sans-serif; letter-spacing: 0.3px; }
+        .article-header .meta span { margin: 0 6px; }
+        .article-body { font-size: 18px; color: #2c2c2c; }
+        .article-body p { margin-bottom: 24px; text-indent: 2em; word-break: break-word; }
+        .article-body p:last-of-type { margin-bottom: 0; }
+        .container.refreshing { opacity: 0.7; transition: opacity 0.3s ease; }
+        @media (max-width: 700px) { .container { padding: 28px 22px; } .article-header h1 { font-size: 26px; } .article-body { font-size: 16px; } }
+        @media (max-width: 450px) { .container { padding: 20px 16px; } .article-header h1 { font-size: 22px; } .article-body { font-size: 15px; } }
+        /* 新增暗号样式 */
+        .fade-quote { opacity: 0.04; transition: opacity 0.3s ease; cursor: pointer; }
+        .fade-quote.active { opacity: 1; }
+    </style>
+</head>
+<body>
+<div class="container" id="appContainer">
+    <header class="article-header">
+        <h1>风室站规</h1>
+        <div class="meta"><span>✧</span>暗号的第一段在此页面<span>✧</span></div>
+    </header>
+    <div class="article-body" id="articleBody"></div>
+</div>
+<script>
+(function() {
+    'use strict';
+    const REFRESH_INTERVAL_MS = 60 * 60 * 1000;
+    const PARAGRAPHS = [
+        '1.本站是一个相对自由的后室分站，您可以在不违反规定的前提下发布任何您想要发布的内容。',
+        '2.每个页面的底下都有着页面选项，且只有选项中的「编辑」能够修改页面内容。恶意删除页面、代码，或做出其他破坏网站的行为在本站是绝对禁止的。一个页面出现有显示错误、自动跳转至其他页面是不正常现象。若您发现有页面出现有以上情况，请立即找到任意一位站务，他们会处理掉的。',
+        '3.不要随意更改其他人的页面，除非您是要修改错别字、修改错误的代码、更正页面格式或添加出入口。在发布新的层级后，您可以在他人的文章页面中也添加该层级的出入口，但是需经过原作者同意。',
+        '4.本网站的讨论区及聊天群是可以随意讨论的。但您在讨论时，请不要做出恶意引战、谩骂、钓鱼的行为。违反本条者，我们将做出一定处罚且不对您负责。',
+        '5.网站上的文章大多数都是隶属于M.E.G.档案库的「档案」，通常情况下都需要按照一定的格式来进行排版。如果您写作的文章是格式错乱的文章，请无视本条规则。',
+        '6.您不应在任何社交平台上泄露本站暗号内容。一经发现，第一次提醒，第二次封禁一个月，第三次永久封禁。',
+        '7.发布未完成的文章在本站是不禁止的，但发布后最好请于一个星期内将其完成。如果您的文章尚未完成，请在文章中标注：此文章尚未完成，正在等待完成中。无法确保自己能够在一个星期内完成文章的，请先将文章移至沙盒站。在沙盒站中，没有人会指责您未完成文章的。',
+        '8.发布完文章后，最好加上评分模块、作者信息和图片来源。没有来源的图片不符合CC协议。虽然本站并不完全遵守CC协议，但所有因上传不合规定的图片而导致的后果，其责任由上传者个人承担。换句话说，你有权利选择不遵循CC协议，但因不遵循CC协议而造成的后果由图片上传者个人负责，网站对此并不负责。如果图片是网络上的无版权图片，就标注图片来源链接。如果图片由您自己拍摄/创作，就标注“图片由本人拍摄”或“图片由本人创作”。如果图片是AI生成的，就标注“图片由AI生成”即可。如果图片由他人拍摄/创作且使用已经过其同意，就标注“此文章使用图片已经过图片提供者同意”。',
+        '9.您在撰写文章时不应抄袭任何内容。',
+        '10.发布包含轻度暴力的内容在本站是被允许的。但我们并不提倡发布重度色情暴力、引人不适的内容。如果实在是很想发，请标注提醒。没有人会希望网站上的内容导致大多数人感到不适。',
+        '11.因类型相似或设定相似而导致的轻度撞车是没关系的。但如果太过于相似，最好将其写成子层级。',
+        '12.人类是不会在每句话后加上“=）”或“=（”的。请您确保您在评论区所看见的人类都是人类且只有人类。若您发现了不属于人类的人类，请立即将情况上报给您看到的第一个管理员，他们会妥善处理的。人话：请您不要在评论区角色扮演，不然会被删。',
+        '13.本网站具有附件存放功能，您在有需要时可以使用。但内存有限，除非特别需要外，请不要上传内存过大的图片或文件。如果图片/文件内存太大，管理员可能会对其进行压缩、替换或删除。我们建议您将图片储存在沙盒站或外部图床。',
+        '14.您可以对编号进行预留。但除非您确认您准备要写这篇文章了，否则请不要占用编号。如果你无视[编号保留]或已命名保留编号的层级/实体/物品/现象使用已占用编号，您的文章将会被管理员移动或删除。',
+        '15.本站允许成员自制层群，但需要向管理员申请，管理员批准后方可创建, 但前提是层群文章质量不得过低，否则将取消。',
+        '16：您在本站的各种行为不得违反中国大陆相关法律法规。',
+        '17：发布的内容适当包含一些宗教元素是允许的，但前提是不得恶意挑起宗教、民族矛盾。',
+        '18：尽管在聊天群、讨论区等地方宣传其他未建交分站是允许的，但最好还是不要这么做。',
+        '19：任何以本站点名义对其他站点进行攻击的行为都是禁止的。',
+        '20：对于在其他后室分站曾有过严重不良行为的用户，为保险起见我们可能也会将其封禁。',
+        '21：在文章或是网站、交流群中恐吓、辱骂其他成员、人身攻击、人肉搜索、盒武器威胁等恶劣是严格禁止的……',
+        '22：搬运自己在其他站发布过的文章到本站的行为是允许的，但是在本站与其他站共存的文章不能参加竞赛。而且一个人最多只能搬运两篇文章，同一人的多个账号视为一人。若发现您搬运了超过两篇的文章，我们会将超过搬运数量上限的文章进行删除处理。',
+        '23.您可以给自己的文章uv，但其删除线并不会因此而受到影响。',
+        '24：禁止在任何社交平台上以损害本站点或站点成员名誉为目的进行“挂站”或“挂人”行为，一经发现则视为自愿放弃本站点成员资格，并且我们也会对其进行等同的挂人处理。此类行为我们将会对其进行永久封禁。'
+    ];
+    const QUOTES = [
+        { text: '松摇碧浪惊栖鹤' },
+        { text: '解落三秋惊宿鸟' },
+        { text: '拂袖轻沾衣袂去' },
+        { text: '独坐小窗闲品茗' },
+        { text: '穿林打叶寻无处' }
+    ];
+    const articleBody = document.getElementById('articleBody');
+    const container = document.getElementById('appContainer');
+    let currentQuoteIndex = -1;
+    let currentPosition = -1;
+    let refreshTimer = null;
+
+    function buildArticleHTML(quoteIndex, position) {
+        const quote = QUOTES[quoteIndex];
+        const paragraphs = PARAGRAPHS.slice();
+        const originalText = paragraphs[position];
+        const appendedText = originalText + '<span class="fade-quote">' + quote.text + '。</span>';
+        paragraphs[position] = appendedText;
+        let html = '';
+        for (let i = 0; i < paragraphs.length; i++) {
+            html += `<p>${paragraphs[i]}</p>`;
+        }
+        return html;
+    }
+
+    function refreshContent(animate = true) {
+        const newQuoteIndex = Math.floor(Math.random() * QUOTES.length);
+        const newPosition = Math.floor(Math.random() * PARAGRAPHS.length);
+        let finalPosition = newPosition;
+        if (newQuoteIndex === currentQuoteIndex && newPosition === currentPosition) {
+            finalPosition = (newPosition + 1) % PARAGRAPHS.length;
+        }
+        currentQuoteIndex = newQuoteIndex;
+        currentPosition = finalPosition;
+        const newHTML = buildArticleHTML(currentQuoteIndex, currentPosition);
+        if (animate) {
+            container.classList.add('refreshing');
+            setTimeout(() => {
+                articleBody.innerHTML = newHTML;
+                container.classList.remove('refreshing');
+            }, 300);
+        } else {
+            articleBody.innerHTML = newHTML;
+        }
+    }
+
+    function startAutoRefresh() {
+        if (refreshTimer) clearInterval(refreshTimer);
+        refreshTimer = setInterval(() => refreshContent(true), REFRESH_INTERVAL_MS);
+    }
+
+    function init() {
+        const initialQuoteIndex = Math.floor(Math.random() * QUOTES.length);
+        const initialPosition = Math.floor(Math.random() * PARAGRAPHS.length);
+        currentQuoteIndex = initialQuoteIndex;
+        currentPosition = initialPosition;
+        articleBody.innerHTML = buildArticleHTML(currentQuoteIndex, currentPosition);
+        startAutoRefresh();
+        // 点击切换透明度（事件委托）
+        articleBody.addEventListener('click', function(e) {
+            const span = e.target.closest('.fade-quote');
+            if (span) span.classList.toggle('active');
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+</script>
+</body>
+</html>
