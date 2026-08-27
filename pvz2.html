@@ -1,0 +1,2284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🌻 植物大战僵尸 · 终极版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            background: #1d3e14;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+            overflow: hidden;
+            margin: 0;
+        }
+        #game-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100vh;
+        }
+        #game-container {
+            background: #5b8c3e;
+            padding: 14px 18px 18px 18px;
+            border-radius: 28px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), inset 0 0 0 2px #7fb35a;
+            display: inline-block;
+            transform: scale(1);
+            transform-origin: center center;
+            transition: transform 0.1s ease;
+            will-change: transform;
+            position: relative;
+        }
+        #version {
+            position: absolute;
+            top: 8px;
+            right: 20px;
+            color: rgba(255, 255, 200, 0.7);
+            font-size: 13px;
+            font-weight: 600;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+            letter-spacing: 0.5px;
+            pointer-events: none;
+            z-index: 10;
+        }
+        #toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #4a7a30;
+            padding: 4px 10px 4px 12px;
+            border-radius: 16px;
+            margin-bottom: 10px;
+            box-shadow: inset 0 -3px 0 #2d5720, 0 4px 8px rgba(0, 0, 0, 0.3);
+            height: 56px;
+            min-width: 700px;
+            gap: 4px;
+            flex-wrap: nowrap;
+            position: relative;
+        }
+        .sun-counter,
+        .energy-counter {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: #f5e56b;
+            padding: 2px 12px 2px 8px;
+            border-radius: 30px;
+            box-shadow: inset 0 -3px 0 #b89e3a, 0 2px 6px rgba(0, 0, 0, 0.25);
+            font-weight: bold;
+            font-size: 22px;
+            color: #4d3500;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
+            height: 36px;
+        }
+        .energy-counter {
+            background: #b0e57c;
+            box-shadow: inset 0 -3px 0 #6a9a3a;
+            color: #1d4a0a;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+        .energy-counter:hover {
+            transform: scale(1.05);
+        }
+        .energy-counter.active {
+            border: 2px solid #4caf50;
+            box-shadow: 0 0 0 3px #8bc34a;
+        }
+        .sun-counter .sun-icon,
+        .energy-counter .energy-icon {
+            font-size: 24px;
+            line-height: 1;
+        }
+        .cards {
+            display: flex;
+            gap: 4px;
+            flex-wrap: nowrap;
+            align-items: center;
+        }
+        .plant-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #e8d6b0;
+            padding: 1px 8px 3px 8px;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: inset 0 -4px 0 #b89e7a, 0 4px 8px rgba(0, 0, 0, 0.25);
+            transition: all 0.1s ease;
+            min-width: 48px;
+            border: 2px solid transparent;
+            position: relative;
+            height: 44px;
+        }
+        .plant-card:hover {
+            transform: translateY(-2px);
+            box-shadow: inset 0 -4px 0 #b89e7a, 0 6px 14px rgba(0, 0, 0, 0.35);
+        }
+        .plant-card:active {
+            transform: translateY(2px);
+            box-shadow: inset 0 -2px 0 #b89e7a;
+        }
+        .plant-card.selected {
+            border-color: #ffd966;
+            box-shadow: inset 0 -4px 0 #b89e7a, 0 0 0 3px #ffd966, 0 4px 12px rgba(255, 215, 0, 0.4);
+            transform: scale(1.03);
+        }
+        .plant-card.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            filter: grayscale(0.6);
+            transform: none !important;
+        }
+        .plant-card .plant-emoji {
+            font-size: 20px;
+            line-height: 1.1;
+        }
+        .plant-card .plant-name {
+            font-size: 8px;
+            font-weight: 600;
+            color: #3d2b1a;
+            letter-spacing: 0.2px;
+            line-height: 1.1;
+        }
+        .plant-card .plant-cost {
+            font-size: 9px;
+            font-weight: 700;
+            color: #7a5a2a;
+            background: #f5e56b;
+            padding: 0 6px;
+            border-radius: 20px;
+            margin-top: 1px;
+            box-shadow: inset 0 -2px 0 #b89e3a;
+            line-height: 1.2;
+        }
+        .plant-card.shovel-card {
+            background: #d4c4a0;
+            min-width: 44px;
+        }
+        .plant-card.shovel-card .plant-emoji {
+            font-size: 18px;
+        }
+        #gameCanvas {
+            display: block;
+            border-radius: 14px;
+            background: #7cb85c;
+            box-shadow: inset 0 0 0 3px #4f7a38, 0 8px 24px rgba(0, 0, 0, 0.5);
+            width: 720px;
+            height: 400px;
+            cursor: default;
+            image-rendering: pixelated;
+            touch-action: none;
+        }
+        .canvas-wrapper {
+            position: relative;
+            display: inline-block;
+            line-height: 0;
+        }
+        #game-over-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.65);
+            border-radius: 14px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            backdrop-filter: blur(4px);
+            z-index: 20;
+        }
+        #game-over-overlay.show {
+            display: flex;
+        }
+        #game-over-overlay h1 {
+            color: #ff6b4a;
+            font-size: 40px;
+            text-shadow: 0 4px 20px rgba(255, 0, 0, 0.5);
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+        }
+        #game-over-overlay p {
+            color: #f5e6c8;
+            font-size: 16px;
+            opacity: 0.9;
+            margin-bottom: 14px;
+        }
+        #game-over-overlay .restart-btn {
+            background: #f5e56b;
+            border: none;
+            padding: 10px 34px;
+            border-radius: 40px;
+            font-size: 20px;
+            font-weight: 700;
+            color: #3d2b1a;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #b89e3a, 0 8px 24px rgba(0, 0, 0, 0.3);
+            transition: all 0.08s ease;
+        }
+        #game-over-overlay .restart-btn:hover {
+            transform: scale(1.05);
+        }
+        #game-over-overlay .restart-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #b89e3a;
+        }
+        @media (max-width: 750px) {
+            #game-container {
+                padding: 8px 10px 10px 10px;
+                border-radius: 18px;
+            }
+            #toolbar {
+                min-width: unset;
+                width: 100%;
+                height: 44px;
+                padding: 3px 6px;
+                flex-wrap: nowrap;
+            }
+            .sun-counter,
+            .energy-counter {
+                font-size: 16px;
+                height: 28px;
+                padding: 0 8px;
+            }
+            .plant-card {
+                min-width: 36px;
+                height: 36px;
+                padding: 1px 4px;
+            }
+            .plant-card .plant-emoji {
+                font-size: 16px;
+            }
+            .plant-card .plant-name {
+                font-size: 6px;
+            }
+            .plant-card .plant-cost {
+                font-size: 7px;
+                padding: 0 3px;
+            }
+            #gameCanvas {
+                width: 100%;
+                height: auto;
+                aspect-ratio: 720 / 400;
+            }
+            #version {
+                font-size: 10px;
+                top: 4px;
+                right: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-wrapper">
+        <div id="game-container">
+            <div id="version">v2.2</div>
+
+            <div id="toolbar">
+                <div class="sun-counter">
+                    <span class="sun-icon">☀️</span>
+                    <span id="sunDisplay">150</span>
+                </div>
+                <div class="energy-counter" id="energyCounter" title="点击切换能量豆模式 (消耗1颗)">
+                    <span class="energy-icon">💚</span>
+                    <span id="energyDisplay">0</span>
+                </div>
+                <div class="cards">
+                    <div class="plant-card" data-plant="sunflower" id="card-sunflower">
+                        <span class="plant-emoji">🌻</span>
+                        <span class="plant-name">向日葵</span>
+                        <span class="plant-cost">50</span>
+                    </div>
+                    <div class="plant-card" data-plant="peashooter" id="card-peashooter">
+                        <span class="plant-emoji">🌱</span>
+                        <span class="plant-name">射手</span>
+                        <span class="plant-cost">100</span>
+                    </div>
+                    <div class="plant-card" data-plant="wallnut" id="card-wallnut">
+                        <span class="plant-emoji">🥜</span>
+                        <span class="plant-name">坚果墙</span>
+                        <span class="plant-cost">50</span>
+                    </div>
+                    <div class="plant-card" data-plant="cherrybomb" id="card-cherrybomb">
+                        <span class="plant-emoji">🍒</span>
+                        <span class="plant-name">樱桃炸弹</span>
+                        <span class="plant-cost">150</span>
+                    </div>
+                    <div class="plant-card" data-plant="lightning" id="card-lightning">
+                        <span class="plant-emoji">⚡</span>
+                        <span class="plant-name">闪电芦苇</span>
+                        <span class="plant-cost">125</span>
+                    </div>
+                    <div class="plant-card shovel-card" data-plant="shovel" id="card-shovel">
+                        <span class="plant-emoji">🔧</span>
+                        <span class="plant-name">铲子</span>
+                        <span class="plant-cost"> </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="canvas-wrapper">
+                <canvas id="gameCanvas" width="720" height="400"></canvas>
+                <div id="game-over-overlay">
+                    <h1>💀 游戏结束</h1>
+                    <p id="gameOverMsg">僵尸入侵了你的花园！</p>
+                    <button class="restart-btn" id="restartBtn">🔄 重新开始</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ================================================================
+        //  🌻 植物大战僵尸 · 终极版  v2.2
+        //  修复BOSS踩踏：只清除BOSS脚下附近植物，不再整行秒杀
+        // ================================================================
+
+        // ---------- 配置 ----------
+        const CONFIG = {
+            ROWS: 5,
+            COLS: 9,
+            CELL_SIZE: 80,
+            TOP_OFFSET: 0,
+            INITIAL_SUN: 150,
+            SUN_INTERVAL: 5000,
+            ZOMBIE_SPAWN_MIN: 2000,
+            ZOMBIE_SPAWN_MAX: 6000,
+            ENERGY_DROP_RATE: 0.08,
+            MAX_ENERGY: 5,
+            BOSS_TRIGGER_KILLS: 100,
+        };
+
+        // 植物类型定义
+        const PLANT_TYPES = {
+            SUNFLOWER: 'sunflower',
+            PEASHOOTER: 'peashooter',
+            WALLNUT: 'wallnut',
+            CHERRYBOMB: 'cherrybomb',
+            LIGHTNING: 'lightning',
+        };
+
+        const PLANT_CONFIG = {
+            sunflower: { cost: 50, hp: 100, name: '向日葵' },
+            peashooter: { cost: 100, hp: 100, name: '射手' },
+            wallnut: { cost: 50, hp: 400, name: '坚果墙' },
+            cherrybomb: { cost: 150, hp: 1, name: '樱桃炸弹' },
+            lightning: { cost: 125, hp: 100, name: '闪电芦苇' },
+        };
+
+        const ZOMBIE_TYPES = {
+            basic: { hp: 200, speed: 0.40, name: '普通', color: '#6d8a7a' },
+            cone: { hp: 420, speed: 0.35, name: '路障', color: '#d97a3a' },
+            bucket: { hp: 720, speed: 0.25, name: '铁桶', color: '#7a8a9a' },
+        };
+        const ZOMBIE_WEIGHTS = { basic: 5, cone: 3, bucket: 1 };
+
+        // ---------- DOM ----------
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const sunDisplay = document.getElementById('sunDisplay');
+        const energyDisplay = document.getElementById('energyDisplay');
+        const energyCounter = document.getElementById('energyCounter');
+        const overlay = document.getElementById('game-over-overlay');
+        const gameOverMsg = document.getElementById('gameOverMsg');
+        const restartBtn = document.getElementById('restartBtn');
+
+        const cards = {
+            sunflower: document.getElementById('card-sunflower'),
+            peashooter: document.getElementById('card-peashooter'),
+            wallnut: document.getElementById('card-wallnut'),
+            cherrybomb: document.getElementById('card-cherrybomb'),
+            lightning: document.getElementById('card-lightning'),
+            shovel: document.getElementById('card-shovel'),
+        };
+
+        // ---------- 游戏状态 ----------
+        let game = {
+            sun: CONFIG.INITIAL_SUN,
+            energy: 0,
+            selectedTool: null,
+            plants: [],
+            zombies: [],
+            projectiles: [],
+            suns: [],
+            energyBeans: [],
+            grid: [],
+            gameOver: false,
+            score: 0,
+            killCount: 0,
+            frame: 0,
+            lastSunDrop: 0,
+            lastZombieSpawn: 0,
+            zombieSpawnInterval: 6000,
+            bossActive: false,
+            boss: null,
+            bossSpawned: false,
+            energyMode: false,
+            effects: [],
+        };
+
+        // ---------- 鼠标位置 ----------
+        let mouseX = -1000,
+            mouseY = -1000;
+
+        // ---------- 工具 ----------
+        function rand(min, max) { return Math.random() * (max - min) + min; }
+
+        function randInt(min, max) { return Math.floor(rand(min, max + 1)); }
+
+        function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+        function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+
+        function cellToPixel(row, col) {
+            return {
+                x: col * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2,
+                y: row * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2 + CONFIG.TOP_OFFSET,
+            };
+        }
+
+        function pixelToCell(px, py) {
+            const col = Math.floor(px / CONFIG.CELL_SIZE);
+            const row = Math.floor((py - CONFIG.TOP_OFFSET) / CONFIG.CELL_SIZE);
+            if (row >= 0 && row < CONFIG.ROWS && col >= 0 && col < CONFIG.COLS) {
+                return { row, col, valid: true };
+            }
+            return { row, col, valid: false };
+        }
+
+        function weightedRandom(weights) {
+            let total = 0;
+            for (let key in weights) total += weights[key];
+            let r = Math.random() * total;
+            for (let key in weights) {
+                r -= weights[key];
+                if (r <= 0) return key;
+            }
+            return Object.keys(weights)[0];
+        }
+
+        // ---------- 网格 ----------
+        function initGrid() {
+            game.grid = [];
+            for (let r = 0; r < CONFIG.ROWS; r++) {
+                game.grid.push(new Array(CONFIG.COLS).fill(null));
+            }
+        }
+
+        // ========== 实体类 ==========
+
+        // ----- 植物基类 -----
+        class Plant {
+            constructor(row, col, type) {
+                this.row = row;
+                this.col = col;
+                this.type = type;
+                const pos = cellToPixel(row, col);
+                this.x = pos.x;
+                this.y = pos.y;
+                const cfg = PLANT_CONFIG[type];
+                this.maxHp = cfg.hp;
+                this.hp = cfg.hp;
+                this.timer = 0;
+                this.animTimer = 0;
+                this.ultraActive = false;
+                this.ultraTimer = 0;
+
+                if (type === PLANT_TYPES.SUNFLOWER) {
+                    this.sunCooldown = 6000 + rand(0, 2000);
+                    this.sunTimer = 0;
+                } else if (type === PLANT_TYPES.PEASHOOTER) {
+                    this.shootCooldown = 1200;
+                    this.shootTimer = 0;
+                } else if (type === PLANT_TYPES.LIGHTNING) {
+                    this.shootCooldown = 1600;
+                    this.shootTimer = 0;
+                } else if (type === PLANT_TYPES.CHERRYBOMB) {
+                    this.exploded = false;
+                    this.explodeTimer = 500;
+                    this.explosionDone = false;
+                }
+            }
+
+            activateUltra() {
+                if (this.ultraActive) return;
+                this.ultraActive = true;
+                this.ultraTimer = 3000;
+                if (this.type === PLANT_TYPES.SUNFLOWER) {
+                    for (let i = 0; i < 6; i++) {
+                        setTimeout(() => {
+                            const sun = new Sun(
+                                this.x + rand(-40, 40),
+                                this.y - 20,
+                                this.x + rand(-60, 60),
+                                this.y + rand(20, 60),
+                                true
+                            );
+                            game.suns.push(sun);
+                        }, i * 100);
+                    }
+                } else if (this.type === PLANT_TYPES.PEASHOOTER) {
+                    // 急速射击
+                } else if (this.type === PLANT_TYPES.WALLNUT) {
+                    this.maxHp += 200;
+                    this.hp = this.maxHp;
+                } else if (this.type === PLANT_TYPES.LIGHTNING) {
+                    // 强化闪电链
+                }
+            }
+
+            update(dt) {
+                if (this.ultraActive) {
+                    this.ultraTimer -= dt;
+                    if (this.ultraTimer <= 0) {
+                        this.ultraActive = false;
+                        if (this.type === PLANT_TYPES.PEASHOOTER) {
+                            this.shootCooldown = 1200;
+                        }
+                    }
+                }
+
+                this.animTimer += dt;
+
+                if (this.type === PLANT_TYPES.SUNFLOWER) {
+                    this.sunTimer += dt;
+                    if (this.sunTimer >= this.sunCooldown) {
+                        this.sunTimer = 0;
+                        this.sunCooldown = 6000 + rand(0, 2000);
+                        const sun = new Sun(
+                            this.x + rand(-20, 20),
+                            this.y - 10,
+                            this.x + rand(-30, 30),
+                            this.y + 30,
+                            true
+                        );
+                        game.suns.push(sun);
+                    }
+                } else if (this.type === PLANT_TYPES.PEASHOOTER) {
+                    if (this.ultraActive) this.shootCooldown = 150;
+                    this.shootTimer += dt;
+                    const hasTarget = game.zombies.some(z =>
+                        z.row === this.row && z.x > this.x && z.hp > 0 && !z.dead
+                    );
+                    if (hasTarget && this.shootTimer >= this.shootCooldown) {
+                        this.shootTimer = 0;
+                        const proj = new Projectile(this.x + 30, this.y - 6, this.row, this.ultraActive);
+                        game.projectiles.push(proj);
+                        if (this.ultraActive) {
+                            game.projectiles.push(new Projectile(this.x + 30, this.y - 18, this.row, false));
+                            game.projectiles.push(new Projectile(this.x + 30, this.y + 6, this.row, false));
+                        }
+                    }
+                } else if (this.type === PLANT_TYPES.LIGHTNING) {
+                    if (this.ultraActive) this.shootCooldown = 300;
+                    this.shootTimer += dt;
+                    const hasTarget = game.zombies.some(z =>
+                        z.row === this.row && z.x > this.x && z.hp > 0 && !z.dead
+                    );
+                    if (hasTarget && this.shootTimer >= this.shootCooldown) {
+                        this.shootTimer = 0;
+                        const targets = game.zombies
+                            .filter(z => z.row === this.row && z.x > this.x && !z.dead)
+                            .sort((a, b) => a.x - b.x);
+                        const count = Math.min(targets.length, 3);
+                        for (let i = 0; i < count; i++) {
+                            const t = targets[i];
+                            const dmg = this.ultraActive ? 30 : 18;
+                            t.hp -= dmg;
+                            if (t.hp <= 0) {
+                                t.dead = true;
+                                game.killCount++;
+                                game.score++;
+                                if (t.dropEnergy && game.energy < CONFIG.MAX_ENERGY) {
+                                    game.energy++;
+                                    updateEnergyDisplay();
+                                }
+                            }
+                            const proj = new Projectile(this.x + 20, this.y - 6 + i * 6, this.row, false);
+                            proj.speed = 10;
+                            proj.radius = 6;
+                            proj.damage = 0;
+                            proj.isLightning = true;
+                            proj.targetX = t.x;
+                            proj.targetY = t.y;
+                            proj.life = 100;
+                            game.projectiles.push(proj);
+                        }
+                    }
+                } else if (this.type === PLANT_TYPES.CHERRYBOMB) {
+                    if (!this.exploded) {
+                        this.explodeTimer -= dt;
+                        if (this.explodeTimer <= 0 && !this.explosionDone) {
+                            this.exploded = true;
+                            this.explosionDone = true;
+                            const row = this.row,
+                                col = this.col;
+                            for (let dr = -1; dr <= 1; dr++) {
+                                for (let dc = -1; dc <= 1; dc++) {
+                                    const r = row + dr,
+                                        c = col + dc;
+                                    if (r < 0 || r >= CONFIG.ROWS || c < 0 || c >= CONFIG.COLS) continue;
+                                    for (const zombie of game.zombies) {
+                                        if (zombie.dead) continue;
+                                        const zRow = zombie.row,
+                                            zCol = Math.floor((zombie.x - 40) / CONFIG.CELL_SIZE);
+                                        if (zRow === r && zCol === c) {
+                                            zombie.hp -= 1800;
+                                            if (zombie.hp <= 0) {
+                                                zombie.dead = true;
+                                                game.killCount++;
+                                                game.score++;
+                                                if (zombie.dropEnergy && game.energy < CONFIG.MAX_ENERGY) {
+                                                    game.energy++;
+                                                    updateEnergyDisplay();
+                                                }
+                                            }
+                                        }
+                                    }
+                                    if (r === row && c === col) continue;
+                                    const plant = game.grid[r][c];
+                                    if (plant) {
+                                        const idx = game.plants.indexOf(plant);
+                                        if (idx !== -1) {
+                                            game.plants.splice(idx, 1);
+                                            game.grid[r][c] = null;
+                                        }
+                                    }
+                                }
+                            }
+                            createExplosionEffect(this.x, this.y, 1.5);
+                            setTimeout(() => {
+                                const idx = game.plants.indexOf(this);
+                                if (idx !== -1) {
+                                    game.plants.splice(idx, 1);
+                                    game.grid[this.row][this.col] = null;
+                                }
+                            }, 200);
+                        }
+                    }
+                }
+            }
+
+            draw(ctx) {
+                const x = this.x,
+                    y = this.y;
+                const s = CONFIG.CELL_SIZE * 0.7;
+
+                if (this.type === PLANT_TYPES.SUNFLOWER) this.drawSunflower(ctx, x, y, s);
+                else if (this.type === PLANT_TYPES.PEASHOOTER) this.drawPeashooter(ctx, x, y, s);
+                else if (this.type === PLANT_TYPES.WALLNUT) this.drawWallnut(ctx, x, y, s);
+                else if (this.type === PLANT_TYPES.CHERRYBOMB) this.drawCherryBomb(ctx, x, y, s);
+                else if (this.type === PLANT_TYPES.LIGHTNING) this.drawLightning(ctx, x, y, s);
+
+                if (this.ultraActive) {
+                    ctx.shadowColor = 'rgba(255, 200, 50, 0.8)';
+                    ctx.shadowBlur = 30;
+                    ctx.beginPath();
+                    ctx.arc(x, y, s * 0.6, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(255, 255, 200, 0.15)';
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+                if (this.hp < this.maxHp && this.type !== PLANT_TYPES.CHERRYBOMB) {
+                    const bw = 40,
+                        bh = 4;
+                    const bx = x - bw / 2,
+                        by = y - s * 0.6 - 6;
+                    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                    ctx.fillRect(bx, by, bw, bh);
+                    ctx.fillStyle = this.hp / this.maxHp > 0.3 ? '#4caf50' : '#f44336';
+                    ctx.fillRect(bx + 1, by + 1, (bw - 2) * (this.hp / this.maxHp), bh - 2);
+                }
+            }
+
+            drawSunflower(ctx, x, y, s) {
+                const bob = Math.sin(this.animTimer * 0.002) * 2;
+                for (let i = 0; i < 10; i++) {
+                    const angle = (i / 10) * Math.PI * 2 + this.animTimer * 0.0005;
+                    const r = s * 0.45;
+                    const px = x + Math.cos(angle) * r;
+                    const py = y + Math.sin(angle) * r * 0.85 + bob;
+                    ctx.beginPath();
+                    ctx.ellipse(px, py, 12, 8, angle, 0, Math.PI * 2);
+                    ctx.fillStyle = '#fadb3a';
+                    ctx.shadowColor = 'rgba(0,0,0,0.1)';
+                    ctx.shadowBlur = 6;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                    ctx.strokeStyle = '#d4a020';
+                    ctx.lineWidth = 1.2;
+                    ctx.stroke();
+                }
+                ctx.beginPath();
+                ctx.arc(x, y + bob, s * 0.3, 0, Math.PI * 2);
+                ctx.fillStyle = '#7a4a2a';
+                ctx.shadowColor = 'rgba(0,0,0,0.2)';
+                ctx.shadowBlur = 8;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                for (let i = 0; i < 12; i++) {
+                    const a = i * 0.8 + 0.2;
+                    const r2 = s * 0.16;
+                    const px2 = x + Math.cos(a + i) * r2;
+                    const py2 = y + Math.sin(a + i) * r2 * 0.7 + bob;
+                    ctx.beginPath();
+                    ctx.arc(px2, py2, 3, 0, Math.PI * 2);
+                    ctx.fillStyle = '#5a3a1a';
+                    ctx.fill();
+                }
+                ctx.fillStyle = '#3d2b1a';
+                ctx.beginPath();
+                ctx.arc(x - 6, y - 4 + bob, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(x + 6, y - 4 + bob, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(x, y + 4 + bob, 8, 0.1, Math.PI - 0.1);
+                ctx.strokeStyle = '#3d2b1a';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            drawPeashooter(ctx, x, y, s) {
+                const bob = Math.sin(this.animTimer * 0.003) * 1.5;
+                ctx.fillStyle = '#3d8a3d';
+                ctx.fillRect(x - 4, y + 12 + bob, 8, 22);
+                ctx.fillStyle = '#4caf50';
+                ctx.beginPath();
+                ctx.ellipse(x - 14, y + 18 + bob, 8, 4, 0.3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(x + 14, y + 20 + bob, 8, 4, -0.3, 0, Math.PI * 2);
+                ctx.fill();
+                const grad = ctx.createRadialGradient(x - 8, y - 8 + bob, 6, x, y + bob, s * 0.5);
+                grad.addColorStop(0, '#6abf4a');
+                grad.addColorStop(0.7, '#2d7a2d');
+                ctx.beginPath();
+                ctx.arc(x, y + bob, s * 0.43, 0, Math.PI * 2);
+                ctx.fillStyle = grad;
+                ctx.shadowColor = 'rgba(0,0,0,0.15)';
+                ctx.shadowBlur = 10;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#1f5a1f';
+                ctx.fillRect(x + 12, y - 6 + bob, 24, 14);
+                ctx.fillStyle = '#2d7a2d';
+                ctx.fillRect(x + 28, y - 8 + bob, 10, 18);
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.ellipse(x - 6, y - 8 + bob, 10, 12, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(x + 10, y - 8 + bob, 10, 12, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#1d3a1d';
+                ctx.beginPath();
+                ctx.arc(x - 4, y - 5 + bob, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(x + 12, y - 5 + bob, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(x - 2, y - 9 + bob, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(x + 14, y - 9 + bob, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#1a3a1a';
+                ctx.beginPath();
+                ctx.arc(x + 28, y + 2 + bob, 4, 0, Math.PI);
+                ctx.fill();
+            }
+
+            drawWallnut(ctx, x, y, s) {
+                const bob = Math.sin(this.animTimer * 0.001) * 1;
+                ctx.shadowColor = 'rgba(0,0,0,0.15)';
+                ctx.shadowBlur = 8;
+                const grad = ctx.createRadialGradient(x - 10, y - 10 + bob, 6, x, y + bob, s * 0.55);
+                grad.addColorStop(0, '#d4a86a');
+                grad.addColorStop(0.6, '#b88a4a');
+                grad.addColorStop(1, '#8a6a2a');
+                ctx.beginPath();
+                ctx.ellipse(x, y + bob, s * 0.48, s * 0.55, 0, 0, Math.PI * 2);
+                ctx.fillStyle = grad;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.strokeStyle = '#6a4a1a';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(x - 10, y - 8 + bob);
+                ctx.quadraticCurveTo(x - 2, y + 4 + bob, x - 14, y + 12 + bob);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x + 8, y - 12 + bob);
+                ctx.quadraticCurveTo(x + 16, y + 2 + bob, x + 4, y + 14 + bob);
+                ctx.stroke();
+                ctx.fillStyle = '#3d2b1a';
+                ctx.beginPath();
+                ctx.arc(x - 10, y - 8 + bob, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(x + 10, y - 8 + bob, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(x, y + 4 + bob, 10, 0.1, Math.PI - 0.1);
+                ctx.strokeStyle = '#3d2b1a';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+
+            drawCherryBomb(ctx, x, y, s) {
+                const bob = Math.sin(this.animTimer * 0.005) * 2;
+                for (let i = -1; i <= 1; i += 2) {
+                    const cx = x + i * 14;
+                    const cy = y + (i * 2) + bob;
+                    ctx.shadowColor = 'rgba(0,0,0,0.2)';
+                    ctx.shadowBlur = 8;
+                    const grad = ctx.createRadialGradient(cx - 4, cy - 4, 4, cx, cy, 16);
+                    grad.addColorStop(0, '#e84a4a');
+                    grad.addColorStop(0.7, '#b81a1a');
+                    grad.addColorStop(1, '#7a0a0a');
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, 16, 0, Math.PI * 2);
+                    ctx.fillStyle = grad;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = '#4a8a3a';
+                    ctx.beginPath();
+                    ctx.ellipse(cx + 8, cy - 10, 6, 3, 0.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.fillStyle = '#6a4a2a';
+                ctx.beginPath();
+                ctx.moveTo(x + 6, y - 8 + bob);
+                ctx.lineTo(x + 16, y - 22 + bob);
+                ctx.lineTo(x + 20, y - 16 + bob);
+                ctx.fill();
+                if (!this.exploded) {
+                    ctx.fillStyle = '#ff6a00';
+                    ctx.shadowColor = 'rgba(255, 100, 0, 0.8)';
+                    ctx.shadowBlur = 20;
+                    ctx.beginPath();
+                    ctx.arc(x + 20, y - 16 + bob, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+            }
+
+            drawLightning(ctx, x, y, s) {
+                const bob = Math.sin(this.animTimer * 0.002) * 2;
+                ctx.fillStyle = '#3d8a3d';
+                ctx.fillRect(x - 3, y + 12 + bob, 6, 20);
+                const grad = ctx.createRadialGradient(x - 4, y - 4 + bob, 4, x, y + bob, s * 0.4);
+                grad.addColorStop(0, '#b0e57c');
+                grad.addColorStop(0.6, '#6a9a3a');
+                grad.addColorStop(1, '#3d6a2a');
+                ctx.shadowColor = 'rgba(0,0,0,0.15)';
+                ctx.shadowBlur = 8;
+                ctx.beginPath();
+                ctx.ellipse(x, y + bob, s * 0.35, s * 0.45, 0, 0, Math.PI * 2);
+                ctx.fillStyle = grad;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#f5f56b';
+                ctx.shadowColor = 'rgba(255, 255, 100, 0.6)';
+                ctx.shadowBlur = 16;
+                ctx.font = '28px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('⚡', x, y - 2 + bob);
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#1d3a1d';
+                ctx.beginPath();
+                ctx.arc(x - 8, y - 6 + bob, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(x + 8, y - 6 + bob, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(x - 6, y - 8 + bob, 1.8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(x + 10, y - 8 + bob, 1.8, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // ----- 僵尸 -----
+        class Zombie {
+            constructor(row, type = 'basic') {
+                this.row = row;
+                const cfg = ZOMBIE_TYPES[type];
+                this.x = CONFIG.COLS * CONFIG.CELL_SIZE + 20 + rand(0, 60);
+                this.y = row * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2 + CONFIG.TOP_OFFSET;
+                this.maxHp = cfg.hp + randInt(0, 40);
+                this.hp = this.maxHp;
+                this.speed = cfg.speed + rand(-0.03, 0.03);
+                this.type = type;
+                this.name = cfg.name;
+                this.color = cfg.color;
+                this.attackCooldown = 0;
+                this.attackInterval = 800;
+                this.damage = 10;
+                this.isAttacking = false;
+                this.animTimer = rand(0, 100);
+                this.dead = false;
+                this.dropEnergy = Math.random() < CONFIG.ENERGY_DROP_RATE;
+                this.isBoss = false;
+            }
+
+            update(dt) {
+                if (this.dead) return;
+                this.animTimer += dt;
+
+                let targetPlant = null;
+                for (const plant of game.plants) {
+                    if (plant.row === this.row && Math.abs(plant.x - this.x) < 42) {
+                        targetPlant = plant;
+                        break;
+                    }
+                }
+
+                if (targetPlant) {
+                    this.isAttacking = true;
+                    this.attackCooldown += dt;
+                    if (this.attackCooldown >= this.attackInterval) {
+                        this.attackCooldown = 0;
+                        targetPlant.hp -= this.damage;
+                        if (targetPlant.hp <= 0) {
+                            const idx = game.plants.indexOf(targetPlant);
+                            if (idx !== -1) {
+                                game.plants.splice(idx, 1);
+                                game.grid[targetPlant.row][targetPlant.col] = null;
+                            }
+                        }
+                    }
+                } else {
+                    this.isAttacking = false;
+                    this.attackCooldown = 0;
+                    if (!this.isBoss) {
+                        this.x -= this.speed * dt * 0.06;
+                    }
+                }
+
+                if (!this.isBoss && this.x < -20) {
+                    game.gameOver = true;
+                    overlay.classList.add('show');
+                    gameOverMsg.textContent = '僵尸入侵了你的花园！';
+                }
+            }
+
+            draw(ctx) {
+                if (this.dead) return;
+                const x = this.x,
+                    y = this.y;
+                const wobble = Math.sin(this.animTimer * 0.06) * 2;
+                const grad = ctx.createRadialGradient(x - 6, y - 10, 4, x, y, 32);
+                grad.addColorStop(0, this.color);
+                grad.addColorStop(0.7, '#3d5a4a');
+                ctx.fillStyle = grad;
+                ctx.shadowColor = 'rgba(0,0,0,0.25)';
+                ctx.shadowBlur = 10;
+                ctx.beginPath();
+                ctx.ellipse(x, y + 4 + wobble, 22, 30, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#3d4a5a';
+                ctx.shadowBlur = 4;
+                ctx.fillRect(x - 16, y + 6 + wobble, 32, 26);
+                ctx.fillStyle = '#2d3a4a';
+                ctx.fillRect(x - 12, y + 10 + wobble, 24, 8);
+                ctx.shadowBlur = 8;
+                const headGrad = ctx.createRadialGradient(x - 4, y - 18, 4, x, y - 10, 20);
+                headGrad.addColorStop(0, '#8aaa8a');
+                headGrad.addColorStop(0.7, '#4a6a5a');
+                ctx.fillStyle = headGrad;
+                ctx.beginPath();
+                ctx.ellipse(x, y - 12 + wobble, 18, 20, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (this.type === 'cone') {
+                    ctx.fillStyle = '#d97a3a';
+                    ctx.shadowBlur = 6;
+                    ctx.beginPath();
+                    ctx.moveTo(x - 16, y - 18 + wobble);
+                    ctx.lineTo(x, y - 38 + wobble);
+                    ctx.lineTo(x + 16, y - 18 + wobble);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.strokeStyle = '#b85a2a';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    ctx.fillStyle = '#f5a86a';
+                    ctx.beginPath();
+                    ctx.arc(x, y - 28 + wobble, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (this.type === 'bucket') {
+                    ctx.fillStyle = '#7a8a9a';
+                    ctx.shadowBlur = 6;
+                    ctx.fillRect(x - 16, y - 32 + wobble, 32, 22);
+                    ctx.fillStyle = '#5a6a7a';
+                    ctx.fillRect(x - 18, y - 32 + wobble, 4, 22);
+                    ctx.fillRect(x + 14, y - 32 + wobble, 4, 22);
+                    ctx.fillStyle = '#9aaab0';
+                    ctx.fillRect(x - 14, y - 34 + wobble, 28, 4);
+                    ctx.fillStyle = '#4a5a6a';
+                    ctx.fillRect(x - 12, y - 28 + wobble, 24, 2);
+                }
+
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = 'rgba(255,0,0,0.4)';
+                ctx.fillStyle = '#ff3333';
+                ctx.beginPath();
+                ctx.arc(x - 7, y - 16 + wobble, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(x + 7, y - 16 + wobble, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#1a1a1a';
+                ctx.beginPath();
+                ctx.arc(x - 6, y - 14 + wobble, 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(x + 8, y - 14 + wobble, 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#2a1a1a';
+                ctx.beginPath();
+                ctx.arc(x, y - 6 + wobble, 8, 0, Math.PI);
+                ctx.fill();
+                ctx.fillStyle = '#ddd';
+                for (let i = -5; i <= 5; i += 4) {
+                    ctx.fillRect(x + i - 1, y - 6 + wobble, 3, 5);
+                }
+                ctx.fillStyle = '#5a7a6a';
+                ctx.shadowBlur = 6;
+                ctx.fillRect(x - 30, y + 2 + wobble, 14, 6);
+                ctx.fillRect(x + 16, y + 2 + wobble, 14, 6);
+                ctx.fillRect(x - 34, y + 2 + wobble - 4, 6, 12);
+                ctx.fillRect(x + 28, y + 2 + wobble - 4, 6, 12);
+                ctx.shadowBlur = 0;
+
+                const bw = 38,
+                    bh = 4;
+                const bx = x - bw / 2,
+                    by = y - 38 + wobble;
+                ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                ctx.fillRect(bx, by, bw, bh);
+                const hpRatio = this.hp / this.maxHp;
+                ctx.fillStyle = hpRatio > 0.4 ? '#66bb6a' : '#ef5350';
+                ctx.fillRect(bx + 1, by + 1, (bw - 2) * hpRatio, bh - 2);
+            }
+
+            takeDamage(dmg) {
+                this.hp -= dmg;
+                if (this.hp <= 0) {
+                    this.dead = true;
+                    game.killCount++;
+                    game.score++;
+                    if (this.dropEnergy && game.energy < CONFIG.MAX_ENERGY) {
+                        game.energy++;
+                        updateEnergyDisplay();
+                    }
+                }
+            }
+        }
+
+        // ----- BOSS类 (踩踏修复) -----
+        class Boss extends Zombie {
+            constructor(row) {
+                super(row, 'basic');
+                this.isBoss = true;
+                const baseHp = 5000 + 1000 * Math.floor(game.killCount / 100);
+                this.maxHp = Math.min(baseHp, 15000);
+                this.hp = this.maxHp;
+                this.speed = 0;
+                this.x = CONFIG.COLS * CONFIG.CELL_SIZE + 20;
+                this.y = row * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2 + CONFIG.TOP_OFFSET;
+                this.originalY = this.y;
+                this.attackCooldown = 0;
+                this.attackInterval = 1200;
+                this.moveCooldown = 0;
+                this.moveInterval = 3000 + rand(0, 2000);
+                this.stompDamage = 9999;
+                this.skillTimer = 0;
+                this.skillInterval = 3000 + rand(0, 2000);
+                this.isMoving = false;
+                this.targetRow = row;
+                this.moveProgress = 0;
+                this.bossActive = true;
+                this.dropEnergy = false;
+                this.color = '#4a2a4a';
+                this.type = 'boss';
+                this.name = 'BOSS';
+                this.summonCooldown = 0;
+                this.bombCooldown = 0;
+                this.targetX = this.x;
+                this.xTimer = 0;
+                this.xInterval = 2000 + rand(0, 2000);
+                this.xRange = 60;
+            }
+
+            update(dt) {
+                if (this.dead || !this.bossActive) return;
+                this.animTimer += dt;
+
+                // 左右摆动
+                this.xTimer += dt;
+                if (this.xTimer >= this.xInterval) {
+                    this.xTimer = 0;
+                    this.xInterval = 2000 + rand(0, 2000);
+                    const minX = Math.max(400, CONFIG.COLS * CONFIG.CELL_SIZE - 120);
+                    const maxX = CONFIG.COLS * CONFIG.CELL_SIZE + 20;
+                    this.targetX = rand(minX, maxX);
+                }
+                this.x += (this.targetX - this.x) * 0.005;
+
+                // 行移动 (踩踏)
+                this.moveCooldown += dt;
+                if (this.moveCooldown >= this.moveInterval) {
+                    this.moveCooldown = 0;
+                    this.moveInterval = 3000 + rand(0, 2500);
+                    let newRow = randInt(0, CONFIG.ROWS - 1);
+                    while (newRow === this.row) newRow = randInt(0, CONFIG.ROWS - 1);
+                    this.targetRow = newRow;
+                    this.isMoving = true;
+                    this.moveProgress = 0;
+                }
+
+                if (this.isMoving) {
+                    this.moveProgress += dt * 0.003;
+                    if (this.moveProgress >= 1) {
+                        this.moveProgress = 1;
+                        this.isMoving = false;
+                        // 踩踏：只清除BOSS脚下的植物（以BOSS为中心的3x3范围）
+                        const stompRadius = 50; // 像素范围
+                        for (const plant of game.plants) {
+                            if (Math.abs(plant.x - this.x) < stompRadius && Math.abs(plant.y - this.y) < stompRadius) {
+                                // 秒杀该植物
+                                const idx = game.plants.indexOf(plant);
+                                if (idx !== -1) {
+                                    game.plants.splice(idx, 1);
+                                    game.grid[plant.row][plant.col] = null;
+                                }
+                            }
+                        }
+                        this.row = this.targetRow;
+                        this.y = this.row * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2 + CONFIG.TOP_OFFSET;
+                        showMessage('💥 BOSS 踩踏！');
+                    } else {
+                        const fromY = this.originalY;
+                        const toY = this.targetRow * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2 + CONFIG.TOP_OFFSET;
+                        this.y = fromY + (toY - fromY) * this.moveProgress;
+                    }
+                } else {
+                    this.y += Math.sin(this.animTimer * 0.001) * 0.3;
+                }
+
+                // 技能
+                this.skillTimer += dt;
+                if (this.skillTimer >= this.skillInterval) {
+                    this.skillTimer = 0;
+                    this.skillInterval = 3000 + rand(0, 2500);
+                    if (Math.random() < 0.6) {
+                        this.summonZombies(3 + Math.floor(Math.random() * 2));
+                    } else {
+                        this.throwBomb();
+                    }
+                }
+
+                // 普通攻击
+                let targetPlant = null;
+                for (const plant of game.plants) {
+                    if (plant.row === this.row && Math.abs(plant.x - this.x) < 50) {
+                        targetPlant = plant;
+                        break;
+                    }
+                }
+                if (targetPlant) {
+                    this.attackCooldown += dt;
+                    if (this.attackCooldown >= 600) {
+                        this.attackCooldown = 0;
+                        targetPlant.hp -= 30;
+                        if (targetPlant.hp <= 0) {
+                            const idx = game.plants.indexOf(targetPlant);
+                            if (idx !== -1) {
+                                game.plants.splice(idx, 1);
+                                game.grid[targetPlant.row][targetPlant.col] = null;
+                            }
+                        }
+                    }
+                } else {
+                    this.attackCooldown = 0;
+                }
+
+                if (this.hp <= 0) {
+                    this.dead = true;
+                    game.bossActive = false;
+                    game.bossSpawned = false;
+                    game.boss = null;
+                    game.killCount += 20;
+                    game.score += 100;
+                    showMessage('🎉 BOSS被击败！');
+                    createExplosionEffect(this.x, this.y, 2);
+                }
+            }
+
+            summonZombies(count) {
+                for (let i = 0; i < count; i++) {
+                    const z = new Zombie(this.row, 'basic');
+                    z.x = this.x + 80 + i * 60;
+                    z.speed = 0.5 + rand(0, 0.2);
+                    game.zombies.push(z);
+                }
+                showMessage(`👾 BOSS 召唤 ${count} 个僵尸！`);
+            }
+
+            throwBomb() {
+                const targets = game.plants.filter(p => p.type !== PLANT_TYPES.CHERRYBOMB);
+                if (targets.length === 0) return;
+                const target = targets[randInt(0, targets.length - 1)];
+                target.hp -= 120;
+                if (target.hp <= 0) {
+                    const idx = game.plants.indexOf(target);
+                    if (idx !== -1) {
+                        game.plants.splice(idx, 1);
+                        game.grid[target.row][target.col] = null;
+                    }
+                }
+                showMessage('💣 BOSS 投掷炸弹！');
+                createExplosionEffect(target.x, target.y, 0.8);
+            }
+
+            draw(ctx) {
+                if (this.dead) return;
+                const x = this.x,
+                    y = this.y;
+                const wobble = Math.sin(this.animTimer * 0.04) * 3;
+
+                const grad = ctx.createRadialGradient(x - 10, y - 20, 10, x, y, 50);
+                grad.addColorStop(0, '#6a4a7a');
+                grad.addColorStop(0.6, '#3a2a4a');
+                grad.addColorStop(1, '#1a1a2a');
+                ctx.shadowColor = 'rgba(0,0,0,0.4)';
+                ctx.shadowBlur = 20;
+                ctx.beginPath();
+                ctx.ellipse(x, y + 6 + wobble, 40, 50, 0, 0, Math.PI * 2);
+                ctx.fillStyle = grad;
+                ctx.fill();
+
+                ctx.fillStyle = '#2a1a3a';
+                ctx.shadowBlur = 8;
+                ctx.fillRect(x - 30, y + 10 + wobble, 60, 40);
+                ctx.fillStyle = '#1a0a2a';
+                ctx.fillRect(x - 24, y + 16 + wobble, 48, 12);
+
+                const headGrad = ctx.createRadialGradient(x - 6, y - 20, 6, x, y - 12, 30);
+                headGrad.addColorStop(0, '#8a7a9a');
+                headGrad.addColorStop(0.7, '#4a3a5a');
+                ctx.shadowBlur = 14;
+                ctx.fillStyle = headGrad;
+                ctx.beginPath();
+                ctx.ellipse(x, y - 14 + wobble, 28, 30, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#f5d742';
+                ctx.shadowBlur = 10;
+                ctx.beginPath();
+                ctx.moveTo(x - 24, y - 28 + wobble);
+                ctx.lineTo(x - 16, y - 44 + wobble);
+                ctx.lineTo(x - 6, y - 32 + wobble);
+                ctx.lineTo(x + 6, y - 44 + wobble);
+                ctx.lineTo(x + 16, y - 32 + wobble);
+                ctx.lineTo(x + 24, y - 28 + wobble);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.shadowColor = 'rgba(255, 0, 0, 0.8)';
+                ctx.shadowBlur = 20;
+                ctx.fillStyle = '#ff0000';
+                ctx.beginPath();
+                ctx.arc(x - 12, y - 18 + wobble, 6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(x + 12, y - 18 + wobble, 6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#1a1a1a';
+                ctx.beginPath();
+                ctx.arc(x - 10, y - 16 + wobble, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(x + 14, y - 16 + wobble, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#1a0a1a';
+                ctx.beginPath();
+                ctx.arc(x, y - 4 + wobble, 12, 0, Math.PI);
+                ctx.fill();
+                ctx.fillStyle = '#ddd';
+                for (let i = -8; i <= 8; i += 5) {
+                    ctx.fillRect(x + i - 2, y - 4 + wobble, 4, 8);
+                }
+
+                ctx.fillStyle = '#4a3a5a';
+                ctx.shadowBlur = 6;
+                ctx.fillRect(x - 44, y + 6 + wobble, 16, 12);
+                ctx.fillRect(x + 28, y + 6 + wobble, 16, 12);
+
+                const bw = 80,
+                    bh = 8;
+                const bx = x - bw / 2,
+                    by = y - 58 + wobble;
+                ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                ctx.shadowBlur = 0;
+                ctx.fillRect(bx, by, bw, bh);
+                const hpRatio = this.hp / this.maxHp;
+                ctx.fillStyle = hpRatio > 0.4 ? '#66bb6a' : '#ef5350';
+                ctx.fillRect(bx + 2, by + 2, (bw - 4) * hpRatio, bh - 4);
+                ctx.shadowBlur = 0;
+            }
+
+            takeDamage(dmg) {
+                this.hp -= dmg;
+                if (this.hp <= 0) {
+                    this.dead = true;
+                    game.bossActive = false;
+                    game.bossSpawned = false;
+                    game.boss = null;
+                    game.killCount += 20;
+                    game.score += 100;
+                    showMessage('🎉 BOSS被击败！');
+                    createExplosionEffect(this.x, this.y, 2);
+                }
+            }
+        }
+
+        // ----- 子弹 -----
+        class Projectile {
+            constructor(x, y, row, ultra = false) {
+                this.x = x;
+                this.y = y;
+                this.row = row;
+                this.speed = 5.5;
+                this.radius = 9;
+                this.damage = ultra ? 35 : 25;
+                this.active = true;
+                this.trail = [];
+                this.ultra = ultra;
+                this.isLightning = false;
+                this.targetX = 0;
+                this.targetY = 0;
+                this.life = 0;
+            }
+
+            update() {
+                if (!this.active) return;
+                if (this.isLightning) {
+                    this.life -= 1;
+                    if (this.life <= 0 || this.x > this.targetX) {
+                        this.active = false;
+                        return;
+                    }
+                    this.x += 8;
+                    this.y += (this.targetY - this.y) * 0.1;
+                    return;
+                }
+                this.trail.push({ x: this.x, y: this.y });
+                if (this.trail.length > 8) this.trail.shift();
+                this.x += this.speed;
+                if (this.x > CONFIG.COLS * CONFIG.CELL_SIZE + 50) {
+                    this.active = false;
+                    return;
+                }
+                for (const zombie of game.zombies) {
+                    if (zombie.dead || zombie.isBoss) continue;
+                    if (zombie.row === this.row && Math.abs(zombie.x - this.x) < 28 && Math.abs(zombie.y - this.y) < 30) {
+                        zombie.takeDamage(this.damage);
+                        this.active = false;
+                        break;
+                    }
+                }
+                if (game.boss && !game.boss.dead && game.boss.row === this.row &&
+                    Math.abs(game.boss.x - this.x) < 45 && Math.abs(game.boss.y - this.y) < 45) {
+                    game.boss.takeDamage(this.damage);
+                    this.active = false;
+                }
+            }
+
+            draw(ctx) {
+                if (!this.active) return;
+                if (this.isLightning) {
+                    ctx.strokeStyle = '#f5f56b';
+                    ctx.shadowColor = 'rgba(255, 255, 100, 0.8)';
+                    ctx.shadowBlur = 20;
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y);
+                    ctx.lineTo(this.targetX, this.targetY);
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                    ctx.beginPath();
+                    ctx.arc(this.targetX, this.targetY, 8, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(255, 255, 200, 0.6)';
+                    ctx.fill();
+                    return;
+                }
+                for (let i = 0; i < this.trail.length; i++) {
+                    const alpha = i / this.trail.length * 0.5;
+                    ctx.beginPath();
+                    ctx.arc(this.trail[i].x, this.trail[i].y, this.radius * (i / this.trail.length) * 0.6, 0, Math.PI * 2);
+                    ctx.fillStyle = this.ultra ? `rgba(255, 220, 80, ${alpha})` : `rgba(120, 220, 80, ${alpha})`;
+                    ctx.fill();
+                }
+                const grad = ctx.createRadialGradient(
+                    this.x - 3, this.y - 3, 2,
+                    this.x, this.y, this.radius
+                );
+                if (this.ultra) {
+                    grad.addColorStop(0, '#fff7a0');
+                    grad.addColorStop(0.5, '#f5d84a');
+                    grad.addColorStop(1, '#d49a20');
+                } else {
+                    grad.addColorStop(0, '#a8f078');
+                    grad.addColorStop(0.6, '#5cb83a');
+                    grad.addColorStop(1, '#2d7a1a');
+                }
+                ctx.shadowColor = this.ultra ? 'rgba(255, 200, 50, 0.8)' : 'rgba(80, 200, 40, 0.5)';
+                ctx.shadowBlur = 20;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = grad;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.beginPath();
+                ctx.arc(this.x - 3, this.y - 4, 3.5, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                ctx.fill();
+            }
+        }
+
+        // ----- 阳光 -----
+        class Sun {
+            constructor(x, y, targetX, targetY, fromPlant = false) {
+                this.x = x;
+                this.y = y;
+                this.targetX = targetX || x + rand(-40, 40);
+                this.targetY = targetY || y + rand(40, 100);
+                this.radius = 18;
+                this.value = 25;
+                this.collected = false;
+                this.collecting = false;
+                this.alpha = 1;
+                this.fromPlant = fromPlant;
+                this.life = 8000 + rand(0, 3000);
+                this.timer = 0;
+                this.animTimer = rand(0, 100);
+                this.falling = !fromPlant;
+                this.fallSpeed = 1.2 + rand(0, 0.8);
+                this.fallTargetY = this.targetY;
+                this.fallProgress = 0;
+                this.bobOffset = rand(0, 100);
+            }
+
+            update(dt) {
+                this.animTimer += dt;
+                this.timer += dt;
+                if (this.collecting) {
+                    const dx = 60 - this.x;
+                    const dy = 38 - this.y;
+                    const d = Math.hypot(dx, dy);
+                    if (d < 10) {
+                        this.collected = true;
+                        game.sun += this.value;
+                        updateSunDisplay();
+                    } else {
+                        const speed = Math.max(8, d * 0.08);
+                        this.x += (dx / d) * speed;
+                        this.y += (dy / d) * speed;
+                    }
+                    return;
+                }
+                if (this.falling) {
+                    this.fallProgress += this.fallSpeed * 0.06;
+                    if (this.fallProgress >= 1) {
+                        this.fallProgress = 1;
+                        this.falling = false;
+                        this.y = this.fallTargetY;
+                    } else {
+                        const t = this.fallProgress;
+                        this.y = this.targetY - 80 + t * 80 + Math.sin(t * Math.PI * 2) * 4;
+                        this.x = this.x + Math.sin(t * Math.PI * 3) * 0.15;
+                    }
+                } else {
+                    this.y += Math.sin(this.animTimer * 0.002 + this.bobOffset) * 0.04;
+                }
+                if (this.timer > this.life && !this.collecting) {
+                    this.alpha -= 0.008;
+                    if (this.alpha <= 0) this.collected = true;
+                }
+            }
+
+            draw(ctx) {
+                if (this.collected) return;
+                const r = this.radius * (0.9 + Math.sin(this.animTimer * 0.003) * 0.06);
+                ctx.globalAlpha = this.alpha;
+                const glow = ctx.createRadialGradient(this.x, this.y, 2, this.x, this.y, r * 2.2);
+                glow.addColorStop(0, 'rgba(255, 230, 80, 0.3)');
+                glow.addColorStop(1, 'rgba(255, 230, 80, 0)');
+                ctx.fillStyle = glow;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, r * 2.2, 0, Math.PI * 2);
+                ctx.fill();
+
+                const grad = ctx.createRadialGradient(
+                    this.x - r * 0.3, this.y - r * 0.3, r * 0.1,
+                    this.x, this.y, r
+                );
+                grad.addColorStop(0, '#fff7a0');
+                grad.addColorStop(0.4, '#fadb3a');
+                grad.addColorStop(0.8, '#e8a820');
+                grad.addColorStop(1, '#b87a18');
+                ctx.shadowColor = 'rgba(255, 200, 50, 0.6)';
+                ctx.shadowBlur = 20;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, r, 0, Math.PI * 2);
+                ctx.fillStyle = grad;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i / 8) * Math.PI * 2 + this.animTimer * 0.001;
+                    const len = r * 0.3 + Math.sin(this.animTimer * 0.005 + i) * 4;
+                    const x1 = this.x + Math.cos(angle) * r * 0.85;
+                    const y1 = this.y + Math.sin(angle) * r * 0.85;
+                    const x2 = this.x + Math.cos(angle) * (r + len);
+                    const y2 = this.y + Math.sin(angle) * (r + len);
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.strokeStyle = `rgba(255, 220, 80, ${0.5 + Math.sin(this.animTimer * 0.004 + i) * 0.2})`;
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+                }
+                ctx.beginPath();
+                ctx.arc(this.x - r * 0.25, this.y - r * 0.3, r * 0.25, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+
+            collect() {
+                if (this.collecting || this.collected) return;
+                this.collecting = true;
+            }
+        }
+
+        // ----- 能量豆 (点击拾取) -----
+        class EnergyBean {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.radius = 18;
+                this.collected = false;
+                this.collecting = false;
+                this.alpha = 1;
+                this.life = 10000;
+                this.timer = 0;
+                this.animTimer = rand(0, 100);
+                this.falling = true;
+                this.fallSpeed = 1.0;
+                this.fallTargetY = y + rand(30, 70);
+                this.fallProgress = 0;
+                this.bobOffset = rand(0, 100);
+            }
+
+            update(dt) {
+                this.animTimer += dt;
+                this.timer += dt;
+                if (this.collecting) {
+                    const dx = 60 - this.x;
+                    const dy = 38 - this.y;
+                    const d = Math.hypot(dx, dy);
+                    if (d < 10) {
+                        this.collected = true;
+                        if (game.energy < CONFIG.MAX_ENERGY) {
+                            game.energy++;
+                            updateEnergyDisplay();
+                            showMessage('💚 +1 能量豆');
+                        } else {
+                            showMessage('⚠️ 能量已满');
+                        }
+                    } else {
+                        const speed = Math.max(8, d * 0.08);
+                        this.x += (dx / d) * speed;
+                        this.y += (dy / d) * speed;
+                    }
+                    return;
+                }
+                if (this.falling) {
+                    this.fallProgress += this.fallSpeed * 0.05;
+                    if (this.fallProgress >= 1) {
+                        this.fallProgress = 1;
+                        this.falling = false;
+                        this.y = this.fallTargetY;
+                    } else {
+                        const t = this.fallProgress;
+                        this.y = this.fallTargetY - 60 + t * 60 + Math.sin(t * Math.PI * 2) * 3;
+                    }
+                } else {
+                    this.y += Math.sin(this.animTimer * 0.002 + this.bobOffset) * 0.05;
+                }
+                if (this.timer > this.life && !this.collecting) {
+                    this.alpha -= 0.01;
+                    if (this.alpha <= 0) this.collected = true;
+                }
+            }
+
+            draw(ctx) {
+                if (this.collected) return;
+                const r = this.radius * (0.9 + Math.sin(this.animTimer * 0.004) * 0.08);
+                ctx.globalAlpha = this.alpha;
+                const glow = ctx.createRadialGradient(this.x, this.y, 2, this.x, this.y, r * 2.8);
+                glow.addColorStop(0, 'rgba(80, 255, 120, 0.4)');
+                glow.addColorStop(1, 'rgba(80, 255, 120, 0)');
+                ctx.fillStyle = glow;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, r * 2.8, 0, Math.PI * 2);
+                ctx.fill();
+
+                const grad = ctx.createRadialGradient(
+                    this.x - r * 0.3, this.y - r * 0.3, r * 0.1,
+                    this.x, this.y, r
+                );
+                grad.addColorStop(0, '#b0ffb0');
+                grad.addColorStop(0.4, '#60e080');
+                grad.addColorStop(0.8, '#30a050');
+                grad.addColorStop(1, '#106020');
+                ctx.shadowColor = 'rgba(80, 255, 120, 0.8)';
+                ctx.shadowBlur = 30;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, r, 0, Math.PI * 2);
+                ctx.fillStyle = grad;
+                ctx.fill();
+
+                ctx.shadowBlur = 0;
+                for (let i = 0; i < 6; i++) {
+                    const angle = (i / 6) * Math.PI * 2 + this.animTimer * 0.002;
+                    const len = r * 0.6 + Math.sin(this.animTimer * 0.006 + i) * 6;
+                    const sx = this.x + Math.cos(angle) * len;
+                    const sy = this.y + Math.sin(angle) * len * 0.7;
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, 2.5 + Math.sin(this.animTimer * 0.005 + i) * 1.5, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 255, 255, ${0.6 + Math.sin(this.animTimer * 0.004 + i) * 0.3})`;
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1;
+            }
+
+            collect() {
+                if (this.collecting || this.collected) return;
+                this.collecting = true;
+            }
+        }
+
+        // ---------- 爆炸特效 ----------
+        function createExplosionEffect(x, y, scale = 1) {
+            const particles = [];
+            const count = 40 * scale;
+            for (let i = 0; i < count; i++) {
+                const angle = rand(0, Math.PI * 2);
+                const speed = rand(2, 8) * scale;
+                const size = rand(4, 12) * scale;
+                const color = ['#ff4a4a', '#ff8a2a', '#ffcc44', '#ff6a2a'][randInt(0, 3)];
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - rand(0, 2),
+                    life: rand(20, 50),
+                    maxLife: 50,
+                    size: size,
+                    color: color,
+                });
+            }
+            game.effects.push({
+                type: 'explosion',
+                particles: particles,
+                timer: 0,
+                duration: 50,
+            });
+        }
+
+        // ---------- UI 消息 ----------
+        let messageText = '';
+        let messageTimer = 0;
+
+        function showMessage(text) {
+            messageText = text;
+            messageTimer = 2000;
+        }
+
+        // ---------- 更新显示 ----------
+        function updateSunDisplay() {
+            sunDisplay.textContent = Math.floor(game.sun);
+            updateCardStates();
+        }
+
+        function updateEnergyDisplay() {
+            energyDisplay.textContent = game.energy;
+            if (game.energy > 0) {
+                energyCounter.style.opacity = '1';
+                energyCounter.style.cursor = 'pointer';
+            } else {
+                energyCounter.style.opacity = '0.6';
+                energyCounter.style.cursor = 'default';
+            }
+        }
+
+        function updateCardStates() {
+            const sun = game.sun;
+            for (let key in cards) {
+                const card = cards[key];
+                if (key === 'shovel') continue;
+                const cost = PLANT_CONFIG[key] ? PLANT_CONFIG[key].cost : 999;
+                card.classList.toggle('disabled', sun < cost);
+            }
+        }
+
+        // ---------- 种植/铲子 ----------
+        function tryPlant(row, col) {
+            if (game.gameOver) return false;
+            const type = game.selectedTool;
+            if (!type || type === 'shovel') return false;
+            if (game.grid[row][col]) return false;
+            const cfg = PLANT_CONFIG[type];
+            if (!cfg) return false;
+            if (game.sun < cfg.cost) return false;
+
+            game.sun -= cfg.cost;
+            updateSunDisplay();
+
+            const plant = new Plant(row, col, type);
+            game.plants.push(plant);
+            game.grid[row][col] = plant;
+
+            game.selectedTool = null;
+            document.querySelectorAll('.plant-card').forEach(el => el.classList.remove('selected'));
+            return true;
+        }
+
+        function tryShovel(row, col) {
+            if (game.gameOver) return false;
+            const plant = game.grid[row][col];
+            if (!plant) return false;
+            const idx = game.plants.indexOf(plant);
+            if (idx !== -1) {
+                game.plants.splice(idx, 1);
+                game.grid[row][col] = null;
+                game.selectedTool = null;
+                document.querySelectorAll('.plant-card').forEach(el => el.classList.remove('selected'));
+                return true;
+            }
+            return false;
+        }
+
+        // ---------- 使用能量豆 ----------
+        function useEnergyOnPlant(row, col) {
+            if (game.energy <= 0) return false;
+            const plant = game.grid[row][col];
+            if (!plant || plant.type === PLANT_TYPES.CHERRYBOMB) return false;
+            game.energy--;
+            updateEnergyDisplay();
+            plant.activateUltra();
+            showMessage('✨ 大招激活！');
+            game.energyMode = false;
+            energyCounter.classList.remove('active');
+            return true;
+        }
+
+        // ---------- 僵尸/BOSS生成 ----------
+        function spawnZombie() {
+            if (game.gameOver) return;
+            if (game.bossActive && game.boss && !game.boss.dead) {
+                if (Math.random() < 0.3) return;
+            }
+            const row = randInt(0, CONFIG.ROWS - 1);
+            const typeKey = weightedRandom(ZOMBIE_WEIGHTS);
+            const zombie = new Zombie(row, typeKey);
+            game.zombies.push(zombie);
+        }
+
+        function dropSunFromSky() {
+            if (game.gameOver) return;
+            const col = randInt(0, CONFIG.COLS - 1);
+            const x = col * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2 + rand(-20, 20);
+            const y = -30 + rand(-20, 20);
+            const targetY = rand(60, CONFIG.ROWS * CONFIG.CELL_SIZE - 40);
+            const sun = new Sun(x, y, x + rand(-30, 30), targetY, false);
+            game.suns.push(sun);
+        }
+
+        function spawnBoss() {
+            if (game.bossSpawned) return;
+            const row = randInt(0, CONFIG.ROWS - 1);
+            const boss = new Boss(row);
+            game.boss = boss;
+            game.zombies.push(boss);
+            game.bossActive = true;
+            game.bossSpawned = true;
+            showMessage('👑 BOSS 降临！');
+        }
+
+        // ---------- 初始化 ----------
+        function initGame() {
+            game.sun = CONFIG.INITIAL_SUN;
+            game.energy = 0;
+            game.selectedTool = null;
+            game.plants = [];
+            game.zombies = [];
+            game.projectiles = [];
+            game.suns = [];
+            game.energyBeans = [];
+            game.grid = [];
+            game.gameOver = false;
+            game.score = 0;
+            game.killCount = 0;
+            game.frame = 0;
+            game.lastSunDrop = 0;
+            game.lastZombieSpawn = 0;
+            game.zombieSpawnInterval = 6000;
+            game.bossActive = false;
+            game.bossSpawned = false;
+            game.boss = null;
+            game.energyMode = false;
+            game.effects = [];
+            initGrid();
+            overlay.classList.remove('show');
+            document.querySelectorAll('.plant-card').forEach(el => el.classList.remove('selected'));
+            energyCounter.classList.remove('active');
+            updateSunDisplay();
+            updateEnergyDisplay();
+            messageText = '';
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => dropSunFromSky(), 500 + i * 800);
+            }
+        }
+
+        // ---------- 更新 ----------
+        function update(dt) {
+            if (game.gameOver) return;
+            game.frame++;
+
+            const baseInterval = 6000;
+            const minInterval = CONFIG.ZOMBIE_SPAWN_MIN;
+            const killFactor = Math.min(game.killCount, 150) / 150;
+            game.zombieSpawnInterval = Math.max(minInterval, baseInterval - killFactor * (baseInterval - minInterval));
+
+            if (game.killCount >= CONFIG.BOSS_TRIGGER_KILLS && !game.bossSpawned) {
+                spawnBoss();
+            }
+
+            for (const plant of game.plants) plant.update(dt);
+            for (const proj of game.projectiles) proj.update();
+            game.projectiles = game.projectiles.filter(p => p.active);
+            for (const zombie of game.zombies) zombie.update(dt);
+            game.zombies = game.zombies.filter(z => !z.dead || z.hp > 0);
+            for (const sun of game.suns) sun.update(dt);
+            game.suns = game.suns.filter(s => !s.collected);
+            for (const bean of game.energyBeans) bean.update(dt);
+            game.energyBeans = game.energyBeans.filter(b => !b.collected);
+
+            // 悬停收集
+            for (const sun of game.suns) {
+                if (sun.collecting || sun.collected) continue;
+                if (dist({ x: mouseX, y: mouseY }, { x: sun.x, y: sun.y }) < sun.radius + 12) {
+                    sun.collect();
+                }
+            }
+            for (const bean of game.energyBeans) {
+                if (bean.collecting || bean.collected) continue;
+                if (dist({ x: mouseX, y: mouseY }, { x: bean.x, y: bean.y }) < bean.radius + 15) {
+                    bean.collect();
+                }
+            }
+
+            for (const effect of game.effects) {
+                effect.timer += dt;
+                for (const p of effect.particles) {
+                    p.x += p.vx * dt * 0.06;
+                    p.y += p.vy * dt * 0.06;
+                    p.vy += 0.05 * dt * 0.06;
+                    p.life -= dt * 0.06;
+                }
+            }
+            game.effects = game.effects.filter(e => e.timer < e.duration);
+
+            if (game.energyMode) {
+                if (!game._energyTimer) game._energyTimer = 0;
+                game._energyTimer += dt;
+                if (game._energyTimer > 5000) {
+                    game.energyMode = false;
+                    energyCounter.classList.remove('active');
+                    game._energyTimer = 0;
+                    showMessage('⏳ 能量模式取消');
+                }
+            } else {
+                game._energyTimer = 0;
+            }
+
+            game.lastSunDrop += dt;
+            if (game.lastSunDrop > CONFIG.SUN_INTERVAL) {
+                game.lastSunDrop = 0;
+                dropSunFromSky();
+            }
+
+            game.lastZombieSpawn += dt;
+            if (game.lastZombieSpawn > game.zombieSpawnInterval) {
+                game.lastZombieSpawn = 0;
+                const count = Math.random() < 0.25 ? 2 : 1;
+                for (let i = 0; i < count; i++) {
+                    setTimeout(() => spawnZombie(), i * 400);
+                }
+            }
+
+            if (messageTimer > 0) {
+                messageTimer -= dt;
+                if (messageTimer < 0) messageTimer = 0;
+            }
+
+            if (game.gameOver) {
+                overlay.classList.add('show');
+                gameOverMsg.textContent = '僵尸入侵了你的花园！';
+            }
+        }
+
+        // ---------- 绘制 ----------
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let r = 0; r < CONFIG.ROWS; r++) {
+                for (let c = 0; c < CONFIG.COLS; c++) {
+                    const x = c * CONFIG.CELL_SIZE;
+                    const y = r * CONFIG.CELL_SIZE + CONFIG.TOP_OFFSET;
+                    const shade = (r + c) % 2 === 0 ? '#7cb85c' : '#6dab4e';
+                    ctx.fillStyle = shade;
+                    ctx.fillRect(x, y, CONFIG.CELL_SIZE, CONFIG.CELL_SIZE);
+                    ctx.strokeStyle = 'rgba(0,0,0,0.05)';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(x, y, CONFIG.CELL_SIZE, CONFIG.CELL_SIZE);
+                }
+            }
+
+            for (const plant of game.plants) plant.draw(ctx);
+            for (const proj of game.projectiles) proj.draw(ctx);
+            for (const zombie of game.zombies) zombie.draw(ctx);
+            for (const sun of game.suns) sun.draw(ctx);
+            for (const bean of game.energyBeans) bean.draw(ctx);
+
+            for (const effect of game.effects) {
+                if (effect.type === 'explosion') {
+                    for (const p of effect.particles) {
+                        const alpha = p.life / p.maxLife;
+                        ctx.globalAlpha = alpha;
+                        ctx.fillStyle = p.color;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    ctx.globalAlpha = 1;
+                }
+            }
+
+            if (game.selectedTool && mouseRow >= 0 && mouseCol >= 0) {
+                const x = mouseCol * CONFIG.CELL_SIZE;
+                const y = mouseRow * CONFIG.CELL_SIZE + CONFIG.TOP_OFFSET;
+                ctx.fillStyle = 'rgba(255, 255, 200, 0.2)';
+                ctx.fillRect(x, y, CONFIG.CELL_SIZE, CONFIG.CELL_SIZE);
+                ctx.strokeStyle = 'rgba(255, 255, 100, 0.7)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 6]);
+                ctx.strokeRect(x, y, CONFIG.CELL_SIZE, CONFIG.CELL_SIZE);
+                ctx.setLineDash([]);
+                if (game.selectedTool !== 'shovel') {
+                    ctx.globalAlpha = 0.5;
+                    const preview = new Plant(mouseRow, mouseCol, game.selectedTool);
+                    preview.draw(ctx);
+                    ctx.globalAlpha = 1;
+                } else {
+                    ctx.fillStyle = 'rgba(255,0,0,0.2)';
+                    ctx.fillRect(x, y, CONFIG.CELL_SIZE, CONFIG.CELL_SIZE);
+                    ctx.font = '30px sans-serif';
+                    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('✖', x + CONFIG.CELL_SIZE / 2, y + CONFIG.CELL_SIZE / 2);
+                }
+            }
+
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.fillRect(0, 0, canvas.width, 26);
+            ctx.fillStyle = '#f5e6c8';
+            ctx.font = 'bold 13px "Segoe UI", sans-serif';
+            ctx.fillText(`击杀: ${game.killCount}`, 12, 19);
+            ctx.fillText(`🌱 植物: ${game.plants.length}`, 120, 19);
+            const zombieCount = game.zombies.filter(z => !z.dead).length;
+            ctx.fillText(`🧟 僵尸: ${zombieCount}`, 220, 19);
+            if (game.bossActive && game.boss && !game.boss.dead) {
+                ctx.fillStyle = '#ff4a4a';
+                ctx.font = 'bold 14px sans-serif';
+                ctx.fillText(`👑 BOSS  HP: ${Math.floor(game.boss.hp)}/${game.boss.maxHp}`, 340, 19);
+            }
+            if (game.energyMode) {
+                ctx.fillStyle = '#b0ffb0';
+                ctx.font = 'bold 14px sans-serif';
+                ctx.fillText('💚 能量模式 (点击植物)', 520, 19);
+            }
+
+            if (messageTimer > 0) {
+                ctx.fillStyle = 'rgba(0,0,0,0.4)';
+                ctx.fillRect(canvas.width / 2 - 140, canvas.height / 2 - 30, 280, 50);
+                ctx.fillStyle = '#fff7c0';
+                ctx.font = 'bold 18px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(messageText, canvas.width / 2, canvas.height / 2);
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'alphabetic';
+            }
+        }
+
+        // ---------- 循环 ----------
+        let lastTime = 0;
+
+        function gameLoop(timestamp) {
+            const dt = Math.min(timestamp - lastTime, 32);
+            lastTime = timestamp;
+            update(dt);
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ---------- 鼠标事件 ----------
+        let mouseRow = -1,
+            mouseCol = -1;
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const px = (e.clientX - rect.left) * scaleX;
+            const py = (e.clientY - rect.top) * scaleY;
+            mouseX = px;
+            mouseY = py;
+            const result = pixelToCell(px, py);
+            if (result.valid) { mouseRow = result.row;
+                mouseCol = result.col; } else { mouseRow = -1;
+                mouseCol = -1; }
+        });
+        canvas.addEventListener('mouseleave', () => {
+            mouseX = -1000;
+            mouseY = -1000;
+            mouseRow = -1;
+            mouseCol = -1;
+        });
+
+        canvas.addEventListener('click', (e) => {
+            if (game.gameOver) return;
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const px = (e.clientX - rect.left) * scaleX;
+            const py = (e.clientY - rect.top) * scaleY;
+
+            for (const bean of game.energyBeans) {
+                if (bean.collecting || bean.collected) continue;
+                if (dist({ x: px, y: py }, { x: bean.x, y: bean.y }) < bean.radius + 15) {
+                    bean.collect();
+                    return;
+                }
+            }
+            for (const sun of game.suns) {
+                if (sun.collecting || sun.collected) continue;
+                if (dist({ x: px, y: py }, { x: sun.x, y: sun.y }) < sun.radius + 12) {
+                    sun.collect();
+                    return;
+                }
+            }
+
+            const result = pixelToCell(px, py);
+            if (!result.valid) return;
+
+            if (game.energyMode) {
+                useEnergyOnPlant(result.row, result.col);
+                return;
+            }
+
+            if (game.selectedTool === 'shovel') {
+                tryShovel(result.row, result.col);
+                return;
+            }
+
+            if (game.selectedTool) {
+                tryPlant(result.row, result.col);
+                mouseRow = -1;
+                mouseCol = -1;
+            }
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const px = (touch.clientX - rect.left) * scaleX;
+            const py = (touch.clientY - rect.top) * scaleY;
+            mouseX = px;
+            mouseY = py;
+            const clickEvent = new MouseEvent('click', {
+                clientX: touch.clientX,
+                clientY: touch.clientY,
+            });
+            canvas.dispatchEvent(clickEvent);
+        }, { passive: false });
+
+        // ---------- 卡片 ----------
+        function setupCards() {
+            for (let key in cards) {
+                const card = cards[key];
+                card.addEventListener('click', () => {
+                    if (game.gameOver) return;
+                    const tool = card.dataset.plant;
+                    if (tool === 'shovel') {
+                        if (game.selectedTool === 'shovel') {
+                            game.selectedTool = null;
+                            card.classList.remove('selected');
+                        } else {
+                            game.selectedTool = 'shovel';
+                            document.querySelectorAll('.plant-card').forEach(el => el.classList.remove('selected'));
+                            card.classList.add('selected');
+                        }
+                        return;
+                    }
+                    const cost = PLANT_CONFIG[tool] ? PLANT_CONFIG[tool].cost : 999;
+                    if (game.sun < cost) {
+                        card.style.transform = 'scale(0.9)';
+                        setTimeout(() => card.style.transform = '', 150);
+                        return;
+                    }
+                    if (game.selectedTool === tool) {
+                        game.selectedTool = null;
+                        card.classList.remove('selected');
+                    } else {
+                        document.querySelectorAll('.plant-card').forEach(el => el.classList.remove('selected'));
+                        game.selectedTool = tool;
+                        card.classList.add('selected');
+                        if (cards.shovel.classList.contains('selected')) cards.shovel.classList.remove('selected');
+                    }
+                });
+            }
+        }
+
+        // ---------- 能量计数器 ----------
+        energyCounter.addEventListener('click', () => {
+            if (game.gameOver) return;
+            if (game.energy <= 0) {
+                showMessage('❌ 没有能量豆');
+                return;
+            }
+            game.energyMode = !game.energyMode;
+            if (game.energyMode) {
+                energyCounter.classList.add('active');
+                game._energyTimer = 0;
+                showMessage('💚 点击植物使用能量豆');
+            } else {
+                energyCounter.classList.remove('active');
+                showMessage('能量模式关闭');
+            }
+        });
+
+        // ---------- 重启 ----------
+        restartBtn.addEventListener('click', () => {
+            initGame();
+            mouseRow = -1;
+            mouseCol = -1;
+            mouseX = -1000;
+            mouseY = -1000;
+            document.querySelectorAll('.plant-card').forEach(el => el.classList.remove('selected'));
+            energyCounter.classList.remove('active');
+            game.energyMode = false;
+        });
+
+        // ---------- 键盘 ----------
+        document.addEventListener('keydown', (e) => {
+            if (e.key === '1') cards.sunflower.click();
+            else if (e.key === '2') cards.peashooter.click();
+            else if (e.key === '3') cards.wallnut.click();
+            else if (e.key === '4') cards.cherrybomb.click();
+            else if (e.key === '5') cards.lightning.click();
+            else if (e.key === '6') cards.shovel.click();
+            else if (e.key === 'e' || e.key === 'E') energyCounter.click();
+            else if (e.key === 'Escape') {
+                game.selectedTool = null;
+                game.energyMode = false;
+                energyCounter.classList.remove('active');
+                document.querySelectorAll('.plant-card').forEach(el => el.classList.remove('selected'));
+            } else if (e.key === 'r' || e.key === 'R') restartBtn.click();
+        });
+
+        // ---------- 自适应 ----------
+        function adjustScale() {
+            const container = document.getElementById('game-container');
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            const naturalW = 760;
+            const naturalH = 520;
+            const scaleX = (w - 20) / naturalW;
+            const scaleY = (h - 20) / naturalH;
+            let scale = Math.min(scaleX, scaleY, 1.6);
+            scale = Math.max(scale, 0.4);
+            container.style.transform = `scale(${scale})`;
+        }
+
+        window.addEventListener('resize', adjustScale);
+        window.addEventListener('load', () => {
+            adjustScale();
+            initGame();
+            setupCards();
+            updateSunDisplay();
+            updateEnergyDisplay();
+            setInterval(updateSunDisplay, 200);
+            requestAnimationFrame((ts) => {
+                lastTime = ts;
+                gameLoop(ts);
+            });
+        });
+
+        console.log('🌻 植物大战僵尸 · 终极版 v2.2');
+        console.log('✔ BOSS踩踏只清除脚下附近植物，不再秒杀整排');
+        console.log('✔ 鼠标悬停收集阳光和能量豆');
+        console.log('✔ 出怪速率随击杀动态提升');
+        console.log('快捷键: [1-6] 选择 [E]能量模式 [Esc]取消 [R]重启');
+    </script>
+</body>
+</html>
