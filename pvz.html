@@ -328,7 +328,7 @@
     <script>
         // ================================================================
         //  🌻 植物大战僵尸 · 终极版  –  完整游戏逻辑
-        //  包含：樱桃炸弹、可储存能量豆、闪电芦苇、BOSS战
+        //  增强BOSS，樱桃炸弹3x3特效，能量豆点击拾取
         // ================================================================
 
         // ---------- 配置 ----------
@@ -411,8 +411,9 @@
             bossActive: false,
             boss: null,
             bossSpawned: false,
-            energyMode: false, // 是否处于能量豆使用模式
-            ultraMode: false, // 内部大招标志，但实际使用能量豆触发
+            energyMode: false,
+            // 特效
+            effects: [],
         };
 
         // ---------- 工具 ----------
@@ -478,7 +479,6 @@
                 this.ultraActive = false;
                 this.ultraTimer = 0;
 
-                // 特殊属性
                 if (type === PLANT_TYPES.SUNFLOWER) {
                     this.sunCooldown = 6000 + rand(0, 2000);
                     this.sunTimer = 0;
@@ -490,7 +490,8 @@
                     this.shootTimer = 0;
                 } else if (type === PLANT_TYPES.CHERRYBOMB) {
                     this.exploded = false;
-                    this.explodeTimer = 300; // 0.3秒后爆炸
+                    this.explodeTimer = 500; // 0.5秒后爆炸
+                    this.explosionDone = false;
                 }
             }
 
@@ -498,7 +499,6 @@
                 if (this.ultraActive) return;
                 this.ultraActive = true;
                 this.ultraTimer = 3000;
-
                 if (this.type === PLANT_TYPES.SUNFLOWER) {
                     for (let i = 0; i < 6; i++) {
                         setTimeout(() => {
@@ -513,12 +513,12 @@
                         }, i * 100);
                     }
                 } else if (this.type === PLANT_TYPES.PEASHOOTER) {
-                    // 急速射击，在update处理
+                    // 急速射击
                 } else if (this.type === PLANT_TYPES.WALLNUT) {
                     this.maxHp += 200;
                     this.hp = this.maxHp;
                 } else if (this.type === PLANT_TYPES.LIGHTNING) {
-                    // 大招：释放强力闪电链，额外伤害
+                    // 强化闪电链
                 }
             }
 
@@ -572,7 +572,6 @@
                     );
                     if (hasTarget && this.shootTimer >= this.shootCooldown) {
                         this.shootTimer = 0;
-                        // 发射闪电，连锁3个
                         const targets = game.zombies
                             .filter(z => z.row === this.row && z.x > this.x && !z.dead)
                             .sort((a, b) => a.x - b.x);
@@ -590,11 +589,10 @@
                                     updateEnergyDisplay();
                                 }
                             }
-                            // 闪电效果 (视觉在draw中用projectile替代)
                             const proj = new Projectile(this.x + 20, this.y - 6 + i * 6, this.row, false);
                             proj.speed = 10;
                             proj.radius = 6;
-                            proj.damage = 0; // 伤害已经在上面处理
+                            proj.damage = 0;
                             proj.isLightning = true;
                             proj.targetX = t.x;
                             proj.targetY = t.y;
@@ -605,33 +603,57 @@
                 } else if (this.type === PLANT_TYPES.CHERRYBOMB) {
                     if (!this.exploded) {
                         this.explodeTimer -= dt;
-                        if (this.explodeTimer <= 0) {
+                        if (this.explodeTimer <= 0 && !this.explosionDone) {
                             this.exploded = true;
-                            // 爆炸伤害
-                            const blastRadius = 100;
-                            for (const zombie of game.zombies) {
-                                if (zombie.dead) continue;
-                                if (Math.abs(zombie.x - this.x) < blastRadius && Math.abs(zombie.y - this.y) < 80) {
-                                    zombie.hp -= 1800;
-                                    if (zombie.hp <= 0) {
-                                        zombie.dead = true;
-                                        game.killCount++;
-                                        game.score++;
-                                        if (zombie.dropEnergy && game.energy < CONFIG.MAX_ENERGY) {
-                                            game.energy++;
-                                            updateEnergyDisplay();
+                            this.explosionDone = true;
+                            // 3x3 范围爆炸
+                            const row = this.row,
+                                col = this.col;
+                            for (let dr = -1; dr <= 1; dr++) {
+                                for (let dc = -1; dc <= 1; dc++) {
+                                    const r = row + dr,
+                                        c = col + dc;
+                                    if (r < 0 || r >= CONFIG.ROWS || c < 0 || c >= CONFIG.COLS) continue;
+                                    // 对僵尸造成伤害
+                                    for (const zombie of game.zombies) {
+                                        if (zombie.dead) continue;
+                                        const zRow = zombie.row,
+                                            zCol = Math.floor((zombie.x - 40) / CONFIG.CELL_SIZE);
+                                        if (zRow === r && zCol === c) {
+                                            zombie.hp -= 1800;
+                                            if (zombie.hp <= 0) {
+                                                zombie.dead = true;
+                                                game.killCount++;
+                                                game.score++;
+                                                if (zombie.dropEnergy && game.energy < CONFIG.MAX_ENERGY) {
+                                                    game.energy++;
+                                                    updateEnergyDisplay();
+                                                }
+                                            }
+                                        }
+                                    }
+                                    // 移除该格植物（除了自身）
+                                    if (r === row && c === col) continue;
+                                    const plant = game.grid[r][c];
+                                    if (plant) {
+                                        const idx = game.plants.indexOf(plant);
+                                        if (idx !== -1) {
+                                            game.plants.splice(idx, 1);
+                                            game.grid[r][c] = null;
                                         }
                                     }
                                 }
                             }
-                            // 爆炸后移除
+                            // 爆炸特效
+                            createExplosionEffect(this.x, this.y, 1.5);
+                            // 移除自身
                             setTimeout(() => {
                                 const idx = game.plants.indexOf(this);
                                 if (idx !== -1) {
                                     game.plants.splice(idx, 1);
                                     game.grid[this.row][this.col] = null;
                                 }
-                            }, 100);
+                            }, 200);
                         }
                     }
                 }
@@ -648,7 +670,6 @@
                 else if (this.type === PLANT_TYPES.CHERRYBOMB) this.drawCherryBomb(ctx, x, y, s);
                 else if (this.type === PLANT_TYPES.LIGHTNING) this.drawLightning(ctx, x, y, s);
 
-                // 大招光环
                 if (this.ultraActive) {
                     ctx.shadowColor = 'rgba(255, 200, 50, 0.8)';
                     ctx.shadowBlur = 30;
@@ -658,8 +679,6 @@
                     ctx.fill();
                     ctx.shadowBlur = 0;
                 }
-
-                // 血条
                 if (this.hp < this.maxHp && this.type !== PLANT_TYPES.CHERRYBOMB) {
                     const bw = 40,
                         bh = 4;
@@ -672,7 +691,6 @@
                 }
             }
 
-            // 各植物绘制
             drawSunflower(ctx, x, y, s) {
                 const bob = Math.sin(this.animTimer * 0.002) * 2;
                 for (let i = 0; i < 10; i++) {
@@ -814,7 +832,6 @@
 
             drawCherryBomb(ctx, x, y, s) {
                 const bob = Math.sin(this.animTimer * 0.005) * 2;
-                // 两个樱桃
                 for (let i = -1; i <= 1; i += 2) {
                     const cx = x + i * 14;
                     const cy = y + (i * 2) + bob;
@@ -834,14 +851,12 @@
                     ctx.ellipse(cx + 8, cy - 10, 6, 3, 0.5, 0, Math.PI * 2);
                     ctx.fill();
                 }
-                // 引线
                 ctx.fillStyle = '#6a4a2a';
                 ctx.beginPath();
                 ctx.moveTo(x + 6, y - 8 + bob);
                 ctx.lineTo(x + 16, y - 22 + bob);
                 ctx.lineTo(x + 20, y - 16 + bob);
                 ctx.fill();
-                // 火花
                 if (!this.exploded) {
                     ctx.fillStyle = '#ff6a00';
                     ctx.shadowColor = 'rgba(255, 100, 0, 0.8)';
@@ -855,10 +870,8 @@
 
             drawLightning(ctx, x, y, s) {
                 const bob = Math.sin(this.animTimer * 0.002) * 2;
-                // 茎
                 ctx.fillStyle = '#3d8a3d';
                 ctx.fillRect(x - 3, y + 12 + bob, 6, 20);
-                // 身体 (芦苇状)
                 const grad = ctx.createRadialGradient(x - 4, y - 4 + bob, 4, x, y + bob, s * 0.4);
                 grad.addColorStop(0, '#b0e57c');
                 grad.addColorStop(0.6, '#6a9a3a');
@@ -870,7 +883,6 @@
                 ctx.fillStyle = grad;
                 ctx.fill();
                 ctx.shadowBlur = 0;
-                // 闪电标记
                 ctx.fillStyle = '#f5f56b';
                 ctx.shadowColor = 'rgba(255, 255, 100, 0.6)';
                 ctx.shadowBlur = 16;
@@ -879,7 +891,6 @@
                 ctx.textBaseline = 'middle';
                 ctx.fillText('⚡', x, y - 2 + bob);
                 ctx.shadowBlur = 0;
-                // 眼睛
                 ctx.fillStyle = '#1d3a1d';
                 ctx.beginPath();
                 ctx.arc(x - 8, y - 6 + bob, 4, 0, Math.PI * 2);
@@ -951,8 +962,6 @@
                     this.attackCooldown = 0;
                     if (!this.isBoss) {
                         this.x -= this.speed * dt * 0.06;
-                    } else {
-                        // BOSS移动逻辑在BOSS类中
                     }
                 }
 
@@ -1078,35 +1087,33 @@
             }
         }
 
-        // ----- BOSS类 -----
+        // ----- BOSS类 (加强版) -----
         class Boss extends Zombie {
             constructor(row) {
                 super(row, 'basic');
                 this.isBoss = true;
-                this.maxHp = 3000 + 500 * Math.floor(game.killCount / 100);
+                const baseHp = 5000 + 1000 * Math.floor(game.killCount / 100);
+                this.maxHp = Math.min(baseHp, 15000);
                 this.hp = this.maxHp;
                 this.speed = 0;
                 this.x = CONFIG.COLS * CONFIG.CELL_SIZE + 20;
                 this.y = row * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2 + CONFIG.TOP_OFFSET;
                 this.originalY = this.y;
-                this.width = 60;
-                this.height = 80;
                 this.attackCooldown = 0;
-                this.attackInterval = 2500; // 每2.5秒技能
+                this.attackInterval = 1200; // 普通攻击速度
                 this.moveCooldown = 0;
-                this.moveInterval = 4000 + rand(0, 3000);
-                this.stompDamage = 30;
+                this.moveInterval = 3000 + rand(0, 2000); // 移动更频繁
+                this.stompDamage = 9999; // 秒杀植物
                 this.skillTimer = 0;
-                this.skillInterval = 5000 + rand(0, 3000);
+                this.skillInterval = 3000 + rand(0, 2000); // 技能更频繁
                 this.isMoving = false;
                 this.targetRow = row;
                 this.moveProgress = 0;
                 this.bossActive = true;
-                this.dropEnergy = false; // BOSS不掉落能量豆
+                this.dropEnergy = false;
                 this.color = '#4a2a4a';
                 this.type = 'boss';
                 this.name = 'BOSS';
-                // 技能冷却
                 this.summonCooldown = 0;
                 this.bombCooldown = 0;
             }
@@ -1115,13 +1122,11 @@
                 if (this.dead || !this.bossActive) return;
                 this.animTimer += dt;
 
-                // BOSS不会进门，只停留在右侧区域（x > 400）
-                // 随机移动 (踩踏)
+                // 移动 (踩踏)
                 this.moveCooldown += dt;
                 if (this.moveCooldown >= this.moveInterval) {
                     this.moveCooldown = 0;
-                    this.moveInterval = 4000 + rand(0, 3000);
-                    // 随机选择新行
+                    this.moveInterval = 3000 + rand(0, 2500);
                     let newRow = randInt(0, CONFIG.ROWS - 1);
                     while (newRow === this.row) newRow = randInt(0, CONFIG.ROWS - 1);
                     this.targetRow = newRow;
@@ -1130,51 +1135,46 @@
                 }
 
                 if (this.isMoving) {
-                    this.moveProgress += dt * 0.002;
+                    this.moveProgress += dt * 0.003;
                     if (this.moveProgress >= 1) {
                         this.moveProgress = 1;
                         this.isMoving = false;
-                        // 踩踏：对目标行的植物造成伤害
+                        // 秒杀目标行所有植物
                         for (const plant of game.plants) {
                             if (plant.row === this.targetRow) {
-                                plant.hp -= this.stompDamage;
-                                if (plant.hp <= 0) {
-                                    const idx = game.plants.indexOf(plant);
-                                    if (idx !== -1) {
-                                        game.plants.splice(idx, 1);
-                                        game.grid[plant.row][plant.col] = null;
-                                    }
+                                const idx = game.plants.indexOf(plant);
+                                if (idx !== -1) {
+                                    game.plants.splice(idx, 1);
+                                    game.grid[plant.row][plant.col] = null;
                                 }
                             }
                         }
                         this.row = this.targetRow;
                         this.y = this.row * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2 + CONFIG.TOP_OFFSET;
+                        showMessage('💥 BOSS 踩踏！');
                     } else {
-                        // 平滑移动
                         const fromY = this.originalY;
                         const toY = this.targetRow * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2 + CONFIG.TOP_OFFSET;
                         this.y = fromY + (toY - fromY) * this.moveProgress;
                         this.x += Math.sin(this.moveProgress * Math.PI) * 0.5;
                     }
                 } else {
-                    // 静止时微晃
                     this.y += Math.sin(this.animTimer * 0.001) * 0.3;
                 }
 
-                // 技能
+                // 技能释放
                 this.skillTimer += dt;
                 if (this.skillTimer >= this.skillInterval) {
                     this.skillTimer = 0;
-                    this.skillInterval = 5000 + rand(0, 3000);
-                    // 随机技能：召唤僵尸 或 扔炸弹
-                    if (Math.random() < 0.5) {
-                        this.summonZombies();
+                    this.skillInterval = 3000 + rand(0, 2500);
+                    if (Math.random() < 0.6) {
+                        this.summonZombies(3 + Math.floor(Math.random() * 2)); // 召唤3-4个
                     } else {
                         this.throwBomb();
                     }
                 }
 
-                // 攻击附近的植物 (类似普通僵尸)
+                // 普通攻击 (攻击附近植物)
                 let targetPlant = null;
                 for (const plant of game.plants) {
                     if (plant.row === this.row && Math.abs(plant.x - this.x) < 50) {
@@ -1184,9 +1184,9 @@
                 }
                 if (targetPlant) {
                     this.attackCooldown += dt;
-                    if (this.attackCooldown >= 800) {
+                    if (this.attackCooldown >= 600) {
                         this.attackCooldown = 0;
-                        targetPlant.hp -= 20;
+                        targetPlant.hp -= 30;
                         if (targetPlant.hp <= 0) {
                             const idx = game.plants.indexOf(targetPlant);
                             if (idx !== -1) {
@@ -1199,35 +1199,33 @@
                     this.attackCooldown = 0;
                 }
 
-                // BOSS死亡检查
                 if (this.hp <= 0) {
                     this.dead = true;
                     game.bossActive = false;
                     game.bossSpawned = false;
                     game.boss = null;
-                    game.killCount += 10; // 击杀BOSS算10杀
-                    game.score += 50;
+                    game.killCount += 20;
+                    game.score += 100;
                     showMessage('🎉 BOSS被击败！');
+                    createExplosionEffect(this.x, this.y, 2);
                 }
             }
 
-            summonZombies() {
-                // 在BOSS所在行召唤2个普通僵尸
-                for (let i = 0; i < 2; i++) {
+            summonZombies(count) {
+                for (let i = 0; i < count; i++) {
                     const z = new Zombie(this.row, 'basic');
                     z.x = this.x + 80 + i * 60;
-                    z.speed = 0.5;
+                    z.speed = 0.5 + rand(0, 0.2);
                     game.zombies.push(z);
                 }
-                showMessage('👾 BOSS 召唤僵尸！');
+                showMessage(`👾 BOSS 召唤 ${count} 个僵尸！`);
             }
 
             throwBomb() {
-                // 对随机植物造成伤害
                 const targets = game.plants.filter(p => p.type !== PLANT_TYPES.CHERRYBOMB);
                 if (targets.length === 0) return;
                 const target = targets[randInt(0, targets.length - 1)];
-                target.hp -= 80;
+                target.hp -= 120;
                 if (target.hp <= 0) {
                     const idx = game.plants.indexOf(target);
                     if (idx !== -1) {
@@ -1236,6 +1234,7 @@
                     }
                 }
                 showMessage('💣 BOSS 投掷炸弹！');
+                createExplosionEffect(target.x, target.y, 0.8);
             }
 
             draw(ctx) {
@@ -1244,7 +1243,6 @@
                     y = this.y;
                 const wobble = Math.sin(this.animTimer * 0.04) * 3;
 
-                // 巨大身体
                 const grad = ctx.createRadialGradient(x - 10, y - 20, 10, x, y, 50);
                 grad.addColorStop(0, '#6a4a7a');
                 grad.addColorStop(0.6, '#3a2a4a');
@@ -1256,14 +1254,12 @@
                 ctx.fillStyle = grad;
                 ctx.fill();
 
-                // 衣服
                 ctx.fillStyle = '#2a1a3a';
                 ctx.shadowBlur = 8;
                 ctx.fillRect(x - 30, y + 10 + wobble, 60, 40);
                 ctx.fillStyle = '#1a0a2a';
                 ctx.fillRect(x - 24, y + 16 + wobble, 48, 12);
 
-                // 头
                 const headGrad = ctx.createRadialGradient(x - 6, y - 20, 6, x, y - 12, 30);
                 headGrad.addColorStop(0, '#8a7a9a');
                 headGrad.addColorStop(0.7, '#4a3a5a');
@@ -1273,7 +1269,6 @@
                 ctx.ellipse(x, y - 14 + wobble, 28, 30, 0, 0, Math.PI * 2);
                 ctx.fill();
 
-                // 王冠
                 ctx.fillStyle = '#f5d742';
                 ctx.shadowBlur = 10;
                 ctx.beginPath();
@@ -1286,7 +1281,6 @@
                 ctx.closePath();
                 ctx.fill();
 
-                // 眼睛 (红色发光)
                 ctx.shadowColor = 'rgba(255, 0, 0, 0.8)';
                 ctx.shadowBlur = 20;
                 ctx.fillStyle = '#ff0000';
@@ -1305,7 +1299,6 @@
                 ctx.arc(x + 14, y - 16 + wobble, 2.5, 0, Math.PI * 2);
                 ctx.fill();
 
-                // 嘴 (獠牙)
                 ctx.fillStyle = '#1a0a1a';
                 ctx.beginPath();
                 ctx.arc(x, y - 4 + wobble, 12, 0, Math.PI);
@@ -1315,13 +1308,11 @@
                     ctx.fillRect(x + i - 2, y - 4 + wobble, 4, 8);
                 }
 
-                // 手臂 (粗壮)
                 ctx.fillStyle = '#4a3a5a';
                 ctx.shadowBlur = 6;
                 ctx.fillRect(x - 44, y + 6 + wobble, 16, 12);
                 ctx.fillRect(x + 28, y + 6 + wobble, 16, 12);
 
-                // 血条 (大)
                 const bw = 80,
                     bh = 8;
                 const bx = x - bw / 2,
@@ -1342,9 +1333,10 @@
                     game.bossActive = false;
                     game.bossSpawned = false;
                     game.boss = null;
-                    game.killCount += 10;
-                    game.score += 50;
+                    game.killCount += 20;
+                    game.score += 100;
                     showMessage('🎉 BOSS被击败！');
+                    createExplosionEffect(this.x, this.y, 2);
                 }
             }
         }
@@ -1370,7 +1362,6 @@
             update() {
                 if (!this.active) return;
                 if (this.isLightning) {
-                    // 闪电特效，快速移动到目标然后消失
                     this.life -= 1;
                     if (this.life <= 0 || this.x > this.targetX) {
                         this.active = false;
@@ -1387,7 +1378,6 @@
                     this.active = false;
                     return;
                 }
-                // 碰撞检测
                 for (const zombie of game.zombies) {
                     if (zombie.dead || zombie.isBoss) continue;
                     if (zombie.row === this.row && Math.abs(zombie.x - this.x) < 28 && Math.abs(zombie.y - this.y) < 30) {
@@ -1396,7 +1386,6 @@
                         break;
                     }
                 }
-                // 检测BOSS (如果存在)
                 if (game.boss && !game.boss.dead && game.boss.row === this.row &&
                     Math.abs(game.boss.x - this.x) < 45 && Math.abs(game.boss.y - this.y) < 45) {
                     game.boss.takeDamage(this.damage);
@@ -1407,7 +1396,6 @@
             draw(ctx) {
                 if (!this.active) return;
                 if (this.isLightning) {
-                    // 闪电线条
                     ctx.strokeStyle = '#f5f56b';
                     ctx.shadowColor = 'rgba(255, 255, 100, 0.8)';
                     ctx.shadowBlur = 20;
@@ -1417,7 +1405,6 @@
                     ctx.lineTo(this.targetX, this.targetY);
                     ctx.stroke();
                     ctx.shadowBlur = 0;
-                    // 小光球
                     ctx.beginPath();
                     ctx.arc(this.targetX, this.targetY, 8, 0, Math.PI * 2);
                     ctx.fillStyle = 'rgba(255, 255, 200, 0.6)';
@@ -1573,7 +1560,7 @@
             }
         }
 
-        // ----- 能量豆 (拾取后存入仓库) -----
+        // ----- 能量豆 (点击拾取) -----
         class EnergyBean {
             constructor(x, y) {
                 this.x = x;
@@ -1604,9 +1591,9 @@
                         if (game.energy < CONFIG.MAX_ENERGY) {
                             game.energy++;
                             updateEnergyDisplay();
-                            showMessage('💚 获得能量豆！');
+                            showMessage('💚 +1 能量豆');
                         } else {
-                            showMessage('⚠️ 能量豆已满！');
+                            showMessage('⚠️ 能量已满');
                         }
                     } else {
                         const speed = Math.max(8, d * 0.08);
@@ -1679,6 +1666,34 @@
                 if (this.collecting || this.collected) return;
                 this.collecting = true;
             }
+        }
+
+        // ---------- 爆炸特效 ----------
+        function createExplosionEffect(x, y, scale = 1) {
+            const particles = [];
+            const count = 40 * scale;
+            for (let i = 0; i < count; i++) {
+                const angle = rand(0, Math.PI * 2);
+                const speed = rand(2, 8) * scale;
+                const size = rand(4, 12) * scale;
+                const color = ['#ff4a4a', '#ff8a2a', '#ffcc44', '#ff6a2a'][randInt(0, 3)];
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - rand(0, 2),
+                    life: rand(20, 50),
+                    maxLife: 50,
+                    size: size,
+                    color: color,
+                });
+            }
+            game.effects.push({
+                type: 'explosion',
+                particles: particles,
+                timer: 0,
+                duration: 50,
+            });
         }
 
         // ---------- UI 消息 ----------
@@ -1758,26 +1773,21 @@
         function useEnergyOnPlant(row, col) {
             if (game.energy <= 0) return false;
             const plant = game.grid[row][col];
-            if (!plant) return false;
-            // 不能对樱桃炸弹使用
-            if (plant.type === PLANT_TYPES.CHERRYBOMB) return false;
-            // 消耗一颗能量豆
+            if (!plant || plant.type === PLANT_TYPES.CHERRYBOMB) return false;
             game.energy--;
             updateEnergyDisplay();
             plant.activateUltra();
             showMessage('✨ 大招激活！');
-            // 退出能量模式
             game.energyMode = false;
             energyCounter.classList.remove('active');
             return true;
         }
 
-        // ---------- 僵尸生成 ----------
+        // ---------- 僵尸/BOSS生成 ----------
         function spawnZombie() {
             if (game.gameOver) return;
             if (game.bossActive && game.boss && !game.boss.dead) {
-                // BOSS存在时，小僵尸生成频率降低
-                if (Math.random() < 0.4) return;
+                if (Math.random() < 0.3) return;
             }
             const row = randInt(0, CONFIG.ROWS - 1);
             const typeKey = weightedRandom(ZOMBIE_WEIGHTS);
@@ -1795,7 +1805,6 @@
             game.suns.push(sun);
         }
 
-        // ---------- BOSS生成 ----------
         function spawnBoss() {
             if (game.bossSpawned) return;
             const row = randInt(0, CONFIG.ROWS - 1);
@@ -1804,7 +1813,7 @@
             game.zombies.push(boss);
             game.bossActive = true;
             game.bossSpawned = true;
-            showMessage('👑 BOSS出现！');
+            showMessage('👑 BOSS 降临！');
         }
 
         // ---------- 初始化 ----------
@@ -1829,8 +1838,7 @@
             game.bossSpawned = false;
             game.boss = null;
             game.energyMode = false;
-            game.ultraMode = false;
-            game._ultraTimer = 0;
+            game.effects = [];
             initGrid();
             overlay.classList.remove('show');
             document.querySelectorAll('.plant-card').forEach(el => el.classList.remove('selected'));
@@ -1848,27 +1856,32 @@
             if (game.gameOver) return;
             game.frame++;
 
-            // 检查BOSS触发
             if (game.killCount >= CONFIG.BOSS_TRIGGER_KILLS && !game.bossSpawned) {
                 spawnBoss();
             }
 
-            // 更新植物
             for (const plant of game.plants) plant.update(dt);
-            // 更新子弹
             for (const proj of game.projectiles) proj.update();
             game.projectiles = game.projectiles.filter(p => p.active);
-            // 更新僵尸 (包括BOSS)
             for (const zombie of game.zombies) zombie.update(dt);
             game.zombies = game.zombies.filter(z => !z.dead || z.hp > 0);
-            // 更新阳光
             for (const sun of game.suns) sun.update(dt);
             game.suns = game.suns.filter(s => !s.collected);
-            // 更新能量豆
             for (const bean of game.energyBeans) bean.update(dt);
             game.energyBeans = game.energyBeans.filter(b => !b.collected);
 
-            // 超时取消能量模式
+            // 特效更新
+            for (const effect of game.effects) {
+                effect.timer += dt;
+                for (const p of effect.particles) {
+                    p.x += p.vx * dt * 0.06;
+                    p.y += p.vy * dt * 0.06;
+                    p.vy += 0.05 * dt * 0.06;
+                    p.life -= dt * 0.06;
+                }
+            }
+            game.effects = game.effects.filter(e => e.timer < e.duration);
+
             if (game.energyMode) {
                 if (!game._energyTimer) game._energyTimer = 0;
                 game._energyTimer += dt;
@@ -1882,14 +1895,12 @@
                 game._energyTimer = 0;
             }
 
-            // 阳光掉落
             game.lastSunDrop += dt;
             if (game.lastSunDrop > CONFIG.SUN_INTERVAL) {
                 game.lastSunDrop = 0;
                 dropSunFromSky();
             }
 
-            // 僵尸生成
             game.lastZombieSpawn += dt;
             if (game.lastZombieSpawn > game.zombieSpawnInterval) {
                 game.lastZombieSpawn = 0;
@@ -1916,7 +1927,6 @@
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 网格
             for (let r = 0; r < CONFIG.ROWS; r++) {
                 for (let c = 0; c < CONFIG.COLS; c++) {
                     const x = c * CONFIG.CELL_SIZE;
@@ -1930,16 +1940,26 @@
                 }
             }
 
-            // 绘制植物
             for (const plant of game.plants) plant.draw(ctx);
-            // 子弹
             for (const proj of game.projectiles) proj.draw(ctx);
-            // 僵尸
             for (const zombie of game.zombies) zombie.draw(ctx);
-            // 阳光
             for (const sun of game.suns) sun.draw(ctx);
-            // 能量豆
             for (const bean of game.energyBeans) bean.draw(ctx);
+
+            // 绘制特效
+            for (const effect of game.effects) {
+                if (effect.type === 'explosion') {
+                    for (const p of effect.particles) {
+                        const alpha = p.life / p.maxLife;
+                        ctx.globalAlpha = alpha;
+                        ctx.fillStyle = p.color;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    ctx.globalAlpha = 1;
+                }
+            }
 
             // 高亮
             if (game.selectedTool && mouseRow >= 0 && mouseCol >= 0) {
@@ -1968,7 +1988,6 @@
                 }
             }
 
-            // 信息
             ctx.fillStyle = 'rgba(0,0,0,0.3)';
             ctx.fillRect(0, 0, canvas.width, 26);
             ctx.fillStyle = '#f5e6c8';
@@ -1980,15 +1999,14 @@
             if (game.bossActive && game.boss && !game.boss.dead) {
                 ctx.fillStyle = '#ff4a4a';
                 ctx.font = 'bold 14px sans-serif';
-                ctx.fillText(`👑 BOSS`, 340, 19);
+                ctx.fillText(`👑 BOSS  HP: ${Math.floor(game.boss.hp)}/${game.boss.maxHp}`, 340, 19);
             }
             if (game.energyMode) {
                 ctx.fillStyle = '#b0ffb0';
                 ctx.font = 'bold 14px sans-serif';
-                ctx.fillText('💚 能量模式 (点击植物)', 420, 19);
+                ctx.fillText('💚 能量模式 (点击植物)', 520, 19);
             }
 
-            // 消息
             if (messageTimer > 0) {
                 ctx.fillStyle = 'rgba(0,0,0,0.4)';
                 ctx.fillRect(canvas.width / 2 - 140, canvas.height / 2 - 30, 280, 50);
@@ -2039,7 +2057,7 @@
             const px = (e.clientX - rect.left) * scaleX;
             const py = (e.clientY - rect.top) * scaleY;
 
-            // 1. 点击能量豆 (拾取)
+            // 点击能量豆
             for (const bean of game.energyBeans) {
                 if (bean.collecting || bean.collected) continue;
                 if (dist({ x: px, y: py }, { x: bean.x, y: bean.y }) < bean.radius + 15) {
@@ -2048,7 +2066,7 @@
                 }
             }
 
-            // 2. 点击阳光
+            // 点击阳光
             for (const sun of game.suns) {
                 if (sun.collecting || sun.collected) continue;
                 if (dist({ x: px, y: py }, { x: sun.x, y: sun.y }) < sun.radius + 12) {
@@ -2057,23 +2075,20 @@
                 }
             }
 
-            // 3. 网格交互
             const result = pixelToCell(px, py);
             if (!result.valid) return;
 
-            // 如果处于能量模式
+            // 能量模式
             if (game.energyMode) {
                 useEnergyOnPlant(result.row, result.col);
                 return;
             }
 
-            // 铲子
             if (game.selectedTool === 'shovel') {
                 tryShovel(result.row, result.col);
                 return;
             }
 
-            // 种植
             if (game.selectedTool) {
                 tryPlant(result.row, result.col);
                 mouseRow = -1;
@@ -2081,7 +2096,6 @@
             }
         });
 
-        // 触摸支持
         canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
             const touch = e.touches[0];
@@ -2134,7 +2148,7 @@
             }
         }
 
-        // ---------- 能量计数器点击切换模式 ----------
+        // ---------- 能量计数器 ----------
         energyCounter.addEventListener('click', () => {
             if (game.gameOver) return;
             if (game.energy <= 0) {
@@ -2179,7 +2193,7 @@
             } else if (e.key === 'r' || e.key === 'R') restartBtn.click();
         });
 
-        // ---------- 自适应缩放 ----------
+        // ---------- 自适应 ----------
         function adjustScale() {
             const container = document.getElementById('game-container');
             const w = window.innerWidth;
@@ -2209,9 +2223,8 @@
 
         console.log('🌻 植物大战僵尸 · 终极版');
         console.log('快捷键: [1]向日葵 [2]射手 [3]坚果墙 [4]樱桃炸弹 [5]闪电芦苇 [6]铲子 [E]能量豆模式 [Esc]取消 [R]重启');
-        console.log('💚 能量豆可储存，点击能量豆图标或按E切换模式，然后点击植物释放大招！');
-        console.log('👑 击杀100只僵尸会出现BOSS！');
+        console.log('💚 能量豆点击拾取，存储后按E切换模式，点击植物释放大招');
+        console.log('👑 击杀100只僵尸出现BOSS，BOSS会踩踏秒杀植物，技能更频繁');
     </script>
-
 </body>
 </html>
