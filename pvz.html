@@ -38,6 +38,20 @@
             transform-origin: center center;
             transition: transform 0.1s ease;
             will-change: transform;
+            position: relative;
+        }
+        /* 版本号 */
+        #version {
+            position: absolute;
+            top: 8px;
+            right: 20px;
+            color: rgba(255, 255, 200, 0.7);
+            font-size: 13px;
+            font-weight: 600;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+            letter-spacing: 0.5px;
+            pointer-events: none;
+            z-index: 10;
         }
         #toolbar {
             display: flex;
@@ -52,6 +66,7 @@
             min-width: 700px;
             gap: 4px;
             flex-wrap: nowrap;
+            position: relative;
         }
         .sun-counter,
         .energy-counter {
@@ -263,6 +278,11 @@
                 height: auto;
                 aspect-ratio: 720 / 400;
             }
+            #version {
+                font-size: 10px;
+                top: 4px;
+                right: 12px;
+            }
         }
     </style>
 </head>
@@ -270,6 +290,9 @@
 
     <div id="game-wrapper">
         <div id="game-container">
+            <!-- 版本号 -->
+            <div id="version">v2.0</div>
+
             <!-- 工具栏 -->
             <div id="toolbar">
                 <div class="sun-counter">
@@ -328,7 +351,7 @@
     <script>
         // ================================================================
         //  🌻 植物大战僵尸 · 终极版  –  完整游戏逻辑
-        //  增强BOSS，樱桃炸弹3x3特效，能量豆点击拾取
+        //  版本 v2.0  –  能量豆概率调低至 0.08
         // ================================================================
 
         // ---------- 配置 ----------
@@ -341,7 +364,7 @@
             SUN_INTERVAL: 5000,
             ZOMBIE_SPAWN_MIN: 2800,
             ZOMBIE_SPAWN_MAX: 7500,
-            ENERGY_DROP_RATE: 0.18,
+            ENERGY_DROP_RATE: 0.08, // 调低概率
             MAX_ENERGY: 5,
             BOSS_TRIGGER_KILLS: 100,
         };
@@ -412,7 +435,6 @@
             boss: null,
             bossSpawned: false,
             energyMode: false,
-            // 特效
             effects: [],
         };
 
@@ -490,7 +512,7 @@
                     this.shootTimer = 0;
                 } else if (type === PLANT_TYPES.CHERRYBOMB) {
                     this.exploded = false;
-                    this.explodeTimer = 500; // 0.5秒后爆炸
+                    this.explodeTimer = 500;
                     this.explosionDone = false;
                 }
             }
@@ -614,7 +636,6 @@
                                     const r = row + dr,
                                         c = col + dc;
                                     if (r < 0 || r >= CONFIG.ROWS || c < 0 || c >= CONFIG.COLS) continue;
-                                    // 对僵尸造成伤害
                                     for (const zombie of game.zombies) {
                                         if (zombie.dead) continue;
                                         const zRow = zombie.row,
@@ -632,7 +653,6 @@
                                             }
                                         }
                                     }
-                                    // 移除该格植物（除了自身）
                                     if (r === row && c === col) continue;
                                     const plant = game.grid[r][c];
                                     if (plant) {
@@ -644,9 +664,7 @@
                                     }
                                 }
                             }
-                            // 爆炸特效
                             createExplosionEffect(this.x, this.y, 1.5);
-                            // 移除自身
                             setTimeout(() => {
                                 const idx = game.plants.indexOf(this);
                                 if (idx !== -1) {
@@ -1100,12 +1118,12 @@
                 this.y = row * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2 + CONFIG.TOP_OFFSET;
                 this.originalY = this.y;
                 this.attackCooldown = 0;
-                this.attackInterval = 1200; // 普通攻击速度
+                this.attackInterval = 1200;
                 this.moveCooldown = 0;
-                this.moveInterval = 3000 + rand(0, 2000); // 移动更频繁
-                this.stompDamage = 9999; // 秒杀植物
+                this.moveInterval = 3000 + rand(0, 2000);
+                this.stompDamage = 9999;
                 this.skillTimer = 0;
-                this.skillInterval = 3000 + rand(0, 2000); // 技能更频繁
+                this.skillInterval = 3000 + rand(0, 2000);
                 this.isMoving = false;
                 this.targetRow = row;
                 this.moveProgress = 0;
@@ -1122,7 +1140,6 @@
                 if (this.dead || !this.bossActive) return;
                 this.animTimer += dt;
 
-                // 移动 (踩踏)
                 this.moveCooldown += dt;
                 if (this.moveCooldown >= this.moveInterval) {
                     this.moveCooldown = 0;
@@ -1139,7 +1156,6 @@
                     if (this.moveProgress >= 1) {
                         this.moveProgress = 1;
                         this.isMoving = false;
-                        // 秒杀目标行所有植物
                         for (const plant of game.plants) {
                             if (plant.row === this.targetRow) {
                                 const idx = game.plants.indexOf(plant);
@@ -1162,19 +1178,17 @@
                     this.y += Math.sin(this.animTimer * 0.001) * 0.3;
                 }
 
-                // 技能释放
                 this.skillTimer += dt;
                 if (this.skillTimer >= this.skillInterval) {
                     this.skillTimer = 0;
                     this.skillInterval = 3000 + rand(0, 2500);
                     if (Math.random() < 0.6) {
-                        this.summonZombies(3 + Math.floor(Math.random() * 2)); // 召唤3-4个
+                        this.summonZombies(3 + Math.floor(Math.random() * 2));
                     } else {
                         this.throwBomb();
                     }
                 }
 
-                // 普通攻击 (攻击附近植物)
                 let targetPlant = null;
                 for (const plant of game.plants) {
                     if (plant.row === this.row && Math.abs(plant.x - this.x) < 50) {
@@ -1870,7 +1884,6 @@
             for (const bean of game.energyBeans) bean.update(dt);
             game.energyBeans = game.energyBeans.filter(b => !b.collected);
 
-            // 特效更新
             for (const effect of game.effects) {
                 effect.timer += dt;
                 for (const p of effect.particles) {
@@ -1946,7 +1959,6 @@
             for (const sun of game.suns) sun.draw(ctx);
             for (const bean of game.energyBeans) bean.draw(ctx);
 
-            // 绘制特效
             for (const effect of game.effects) {
                 if (effect.type === 'explosion') {
                     for (const p of effect.particles) {
@@ -1961,7 +1973,6 @@
                 }
             }
 
-            // 高亮
             if (game.selectedTool && mouseRow >= 0 && mouseCol >= 0) {
                 const x = mouseCol * CONFIG.CELL_SIZE;
                 const y = mouseRow * CONFIG.CELL_SIZE + CONFIG.TOP_OFFSET;
@@ -2057,7 +2068,6 @@
             const px = (e.clientX - rect.left) * scaleX;
             const py = (e.clientY - rect.top) * scaleY;
 
-            // 点击能量豆
             for (const bean of game.energyBeans) {
                 if (bean.collecting || bean.collected) continue;
                 if (dist({ x: px, y: py }, { x: bean.x, y: bean.y }) < bean.radius + 15) {
@@ -2066,7 +2076,6 @@
                 }
             }
 
-            // 点击阳光
             for (const sun of game.suns) {
                 if (sun.collecting || sun.collected) continue;
                 if (dist({ x: px, y: py }, { x: sun.x, y: sun.y }) < sun.radius + 12) {
@@ -2078,7 +2087,6 @@
             const result = pixelToCell(px, py);
             if (!result.valid) return;
 
-            // 能量模式
             if (game.energyMode) {
                 useEnergyOnPlant(result.row, result.col);
                 return;
@@ -2221,10 +2229,10 @@
             });
         });
 
-        console.log('🌻 植物大战僵尸 · 终极版');
+        console.log('🌻 植物大战僵尸 · 终极版 v2.0');
         console.log('快捷键: [1]向日葵 [2]射手 [3]坚果墙 [4]樱桃炸弹 [5]闪电芦苇 [6]铲子 [E]能量豆模式 [Esc]取消 [R]重启');
         console.log('💚 能量豆点击拾取，存储后按E切换模式，点击植物释放大招');
-        console.log('👑 击杀100只僵尸出现BOSS，BOSS会踩踏秒杀植物，技能更频繁');
+        console.log('👑 击杀100只僵尸出现BOSS，BOSS踩踏秒杀植物，技能更频繁');
     </script>
 </body>
 </html>
