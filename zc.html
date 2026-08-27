@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐱 桌面宠物 - 可拖动桌宠</title>
+    <style>
+        :root {
+            --pet-size: 100px;
+            --pet-size-mobile: 75px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #fdf6f0 0%, #f0e6da 25%, #faf5ef 50%, #f3e8dc 75%, #fdf7f2 100%);
+            background-attachment: fixed;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            overflow: hidden;
+            cursor: default;
+            position: relative;
+        }
+
+        /* 背景装饰 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -200px;
+            right: -150px;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(255, 182, 140, 0.25) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -180px;
+            left: -120px;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(255, 200, 160, 0.2) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* 宠物容器 */
+        .pet-container {
+            position: fixed;
+            z-index: 9999;
+            cursor: grab;
+            transition: left 0.8s cubic-bezier(0.34, 1.56, 0.64, 1),
+                top 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+            filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.18));
+            -webkit-filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.18));
+            will-change: left, top, transform;
+        }
+
+        .pet-container.dragging {
+            cursor: grabbing;
+            transition: none !important;
+            filter: drop-shadow(0 14px 30px rgba(0, 0, 0, 0.3));
+            -webkit-filter: drop-shadow(0 14px 30px rgba(0, 0, 0, 0.3));
+            z-index: 10000;
+        }
+
+        .pet-container.dragging .pet-wrapper {
+            animation: petSquish 0.4s ease-out forwards;
+        }
+
+        .pet-container.walking .pet-wrapper {
+            animation: petBounce 0.35s ease-in-out infinite;
+        }
+
+        .pet-container.walking.flip .pet-wrapper {
+            animation: petBounce 0.35s ease-in-out infinite;
+        }
+
+        .pet-container.idle .pet-wrapper {
+            animation: petIdleBreathe 3s ease-in-out infinite;
+        }
+
+        /* 宠物包裹器 */
+        .pet-wrapper {
+            position: relative;
+            width: var(--pet-size);
+            height: var(--pet-size);
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform-origin: bottom center;
+        }
+
+        .pet-container.flip .pet-inner {
+            transform: scaleX(-1);
+        }
+
+        .pet-inner {
+            width: 100%;
+            height: 100%;
+            transition: transform 0.3s ease;
+            position: relative;
+        }
+
+        /* 宠物图片 */
+        .pet-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+            image-rendering: auto;
+            display: block;
+        }
+
+        /* Emoji fallback */
+        .pet-emoji-fallback {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 80px;
+            pointer-events: none;
+            animation: emojiWiggle 4s ease-in-out infinite;
+            line-height: 1;
+            transition: font-size 0.3s ease;
+        }
+
+        /* 阴影 */
+        .pet-shadow {
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 14px;
+            background: radial-gradient(ellipse, rgba(0, 0, 0, 0.2) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            transition: all 0.4s ease;
+        }
+        .pet-container.dragging .pet-shadow {
+            bottom: -16px;
+            width: 45%;
+            height: 8px;
+            background: radial-gradient(ellipse, rgba(0, 0, 0, 0.35) 0%, transparent 70%);
+        }
+        .pet-container.walking .pet-shadow {
+            animation: shadowPulse 0.35s ease-in-out infinite;
+        }
+
+        /* 爱心特效容器 */
+        .hearts-layer {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .heart-particle {
+            position: absolute;
+            font-size: 20px;
+            pointer-events: none;
+            animation: heartFloat 2s ease-out forwards;
+            opacity: 0;
+            will-change: transform, opacity;
+        }
+
+        /* 点击波纹 */
+        .click-ripple {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 150, 120, 0.7);
+            pointer-events: none;
+            animation: rippleOut 0.7s ease-out forwards;
+            opacity: 0;
+        }
+
+        /* 设置面板 */
+        .settings-panel {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 22px 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+            z-index: 10001;
+            transform: translateY(calc(100% + 40px));
+            transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
+                opacity 0.35s ease;
+            opacity: 0;
+            pointer-events: none;
+            min-width: 300px;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .settings-panel.visible {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .settings-panel h3 {
+            margin: 0 0 8px 0;
+            font-size: 1.1em;
+            color: #4a3728;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        .settings-panel h3 .icon {
+            font-size: 1.3em;
+        }
+        .settings-panel .hint {
+            font-size: 0.78em;
+            color: #8c7b6d;
+            margin-bottom: 14px;
+            line-height: 1.4;
+        }
+        .settings-panel label {
+            display: block;
+            font-size: 0.82em;
+            color: #5c4a3a;
+            font-weight: 500;
+            margin-bottom: 5px;
+            letter-spacing: 0.3px;
+        }
+        .settings-panel .input-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .settings-panel input[type="text"] {
+            flex: 1;
+            padding: 10px 14px;
+            border: 2px solid #e8dcd0;
+            border-radius: 12px;
+            font-size: 0.9em;
+            outline: none;
+            transition: all 0.25s ease;
+            background: #fdfaf7;
+            color: #3d3227;
+            min-width: 0;
+        }
+        .settings-panel input[type="text"]:focus {
+            border-color: #ffb08c;
+            box-shadow: 0 0 0 4px rgba(255, 160, 120, 0.1);
+            background: #fff;
+        }
+        .settings-panel button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.88em;
+            letter-spacing: 0.3px;
+            transition: all 0.25s ease;
+            white-space: nowrap;
+        }
+        .btn-apply {
+            background: #ff9a76;
+            color: #fff;
+        }
+        .btn-apply:hover {
+            background: #ff7f50;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(255, 122, 90, 0.35);
+        }
+        .btn-apply:active {
+            transform: scale(0.95);
+        }
+        .btn-reset {
+            background: #f5ede4;
+            color: #6b5744;
+        }
+        .btn-reset:hover {
+            background: #e8d9c8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        .btn-reset:active {
+            transform: scale(0.95);
+        }
+        .btn-close-panel {
+            position: absolute;
+            top: 10px;
+            right: 14px;
+            background: none;
+            border: none;
+            font-size: 1.4em;
+            cursor: pointer;
+            color: #b0a090;
+            padding: 4px 8px;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+            line-height: 1;
+        }
+        .btn-close-panel:hover {
+            color: #5c4a3a;
+            background: rgba(0, 0, 0, 0.04);
+        }
+
+        /* 设置切换按钮 */
+        .settings-toggle {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            cursor: pointer;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+            z-index: 10002;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            color: #6b5744;
+        }
+        .settings-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
+            background: #fff;
+        }
+        .settings-toggle:active {
+            transform: scale(0.92);
+        }
+        .settings-toggle.active {
+            background: #ff9a76;
+            color: #fff;
+            border-color: transparent;
+            transform: rotate(45deg);
+        }
+
+        /* 提示标签 */
+        .tooltip {
+            position: fixed;
+            background: rgba(60, 40, 30, 0.88);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.82em;
+            pointer-events: none;
+            z-index: 10003;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            white-space: nowrap;
+            letter-spacing: 0.3px;
+        }
+        .tooltip.show {
+            opacity: 1;
+        }
+
+        /* 动画关键帧 */
+        @keyframes petBounce {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-14px);
+            }
+            60% {
+                transform: translateY(-4px);
+            }
+            85% {
+                transform: translateY(-9px);
+            }
+        }
+
+        @keyframes petSquish {
+            0% {
+                transform: scale(1, 1);
+            }
+            30% {
+                transform: scale(1.08, 0.88);
+            }
+            60% {
+                transform: scale(0.94, 1.04);
+            }
+            100% {
+                transform: scale(1, 1);
+            }
+        }
+
+        @keyframes petIdleBreathe {
+            0%,
+            100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.03);
+            }
+        }
+
+        @keyframes shadowPulse {
+            0%,
+            100% {
+                transform: translateX(-50%) scale(1);
+                opacity: 0.7;
+            }
+            30% {
+                transform: translateX(-50%) scale(0.75);
+                opacity: 0.4;
+            }
+            60% {
+                transform: translateX(-50%) scale(0.9);
+                opacity: 0.55;
+            }
+            85% {
+                transform: translateX(-50%) scale(0.8);
+                opacity: 0.45;
+            }
+        }
+
+        @keyframes heartFloat {
+            0% {
+                transform: translate(0, 0) scale(0.3) rotate(0deg);
+                opacity: 0;
+            }
+            15% {
+                transform: translate(calc(var(--drift-x) * 0.3), -30px) scale(0.8) rotate(calc(var(--rotation) * 0.3));
+                opacity: 1;
+            }
+            40% {
+                transform: translate(calc(var(--drift-x) * 0.7), -80px) scale(1.1) rotate(calc(var(--rotation) * 0.7));
+                opacity: 0.9;
+            }
+            70% {
+                transform: translate(var(--drift-x), -150px) scale(0.9) rotate(var(--rotation));
+                opacity: 0.5;
+            }
+            100% {
+                transform: translate(calc(var(--drift-x) * 1.5), -220px) scale(0.2) rotate(calc(var(--rotation) * 1.4));
+                opacity: 0;
+            }
+        }
+
+        @keyframes rippleOut {
+            0% {
+                width: 10px;
+                height: 10px;
+                opacity: 0.8;
+            }
+            100% {
+                width: 80px;
+                height: 80px;
+                opacity: 0;
+            }
+        }
+
+        @keyframes emojiWiggle {
+            0%,
+            100% {
+                transform: rotate(0deg);
+            }
+            15% {
+                transform: rotate(3deg);
+            }
+            30% {
+                transform: rotate(-3deg);
+            }
+            45% {
+                transform: rotate(2deg);
+            }
+            60% {
+                transform: rotate(0deg);
+            }
+            75% {
+                transform: rotate(-2deg);
+            }
+            90% {
+                transform: rotate(1deg);
+            }
+        }
+
+        @keyframes floatUpGlow {
+            0% {
+                transform: translate(-50%, 0) scale(0.5);
+                opacity: 0.7;
+            }
+            50% {
+                transform: translate(-50%, -60px) scale(1.3);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -140px) scale(0.3);
+                opacity: 0;
+            }
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .pet-wrapper {
+                width: var(--pet-size-mobile);
+                height: var(--pet-size-mobile);
+            }
+            .pet-emoji-fallback {
+                font-size: 60px;
+            }
+            .settings-panel {
+                bottom: 20px;
+                right: 10px;
+                left: 10px;
+                min-width: auto;
+                border-radius: 16px;
+                padding: 16px 18px;
+            }
+            .settings-toggle {
+                bottom: 20px;
+                right: 16px;
+                width: 42px;
+                height: 42px;
+                font-size: 1.3em;
+            }
+            .settings-panel input[type="text"] {
+                font-size: 0.82em;
+                padding: 8px 10px;
+            }
+            .settings-panel button {
+                font-size: 0.8em;
+                padding: 8px 12px;
+            }
+            .heart-particle {
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .pet-wrapper {
+                width: 60px;
+                height: 60px;
+            }
+            .pet-emoji-fallback {
+                font-size: 46px;
+            }
+            .settings-panel {
+                bottom: 12px;
+                right: 6px;
+                left: 6px;
+                padding: 12px 14px;
+                border-radius: 14px;
+            }
+            .settings-toggle {
+                bottom: 12px;
+                right: 10px;
+                width: 36px;
+                height: 36px;
+                font-size: 1.1em;
+            }
+            .settings-panel h3 {
+                font-size: 0.95em;
+            }
+            .settings-panel .hint {
+                font-size: 0.7em;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 桌面宠物 -->
+    <div class="pet-container" id="petContainer" aria-label="桌面宠物" role="img">
+        <div class="pet-wrapper" id="petWrapper">
+            <div class="pet-inner" id="petInner">
+                <!-- 外部图片（默认隐藏，加载成功后显示） -->
+                <img
+                class="pet-image"
+                id="petImage"
+                src=""
+                alt="宠物"
+                style="display:none;"
+                draggable="false"
+                >
+                <!-- Emoji 备选 -->
+                <div class="pet-emoji-fallback" id="petEmoji" title="你的桌面小伙伴 🐱">🐱</div>
+            </div>
+            <div class="pet-shadow" id="petShadow"></div>
+        </div>
+        <!-- 爱心特效层 -->
+        <div class="hearts-layer" id="heartsLayer"></div>
+    </div>
+
+    <!-- 设置面板 -->
+    <div class="settings-panel" id="settingsPanel">
+        <button class="btn-close-panel" id="btnClosePanel" title="关闭设置">✕</button>
+        <h3><span class="icon">🎨</span> 宠物设置</h3>
+        <p class="hint">💡 粘贴任意图片URL，打造专属桌宠！<br>支持 PNG / GIF / JPG / WebP 等格式。</p>
+        <label for="imageUrlInput">🖼️ 外部图片 URL</label>
+        <div class="input-row">
+            <input
+            type="text"
+            id="imageUrlInput"
+            placeholder="https://example.com/pet.png"
+            spellcheck="false"
+            >
+            <button class="btn-apply" id="btnApply">✨ 应用</button>
+        </div>
+        <div class="input-row" style="margin-top:8px;">
+            <button class="btn-reset" id="btnReset">🔄 恢复默认</button>
+        </div>
+    </div>
+
+    <!-- 设置按钮 -->
+    <button class="settings-toggle" id="settingsToggle" title="宠物设置">⚙️</button>
+
+    <!-- 提示标签 -->
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        (function() {
+            // ==================== DOM 元素 ====================
+            const petContainer = document.getElementById('petContainer');
+            const petWrapper = document.getElementById('petWrapper');
+            const petInner = document.getElementById('petInner');
+            const petImage = document.getElementById('petImage');
+            const petEmoji = document.getElementById('petEmoji');
+            const petShadow = document.getElementById('petShadow');
+            const heartsLayer = document.getElementById('heartsLayer');
+            const settingsPanel = document.getElementById('settingsPanel');
+            const settingsToggle = document.getElementById('settingsToggle');
+            const btnClosePanel = document.getElementById('btnClosePanel');
+            const imageUrlInput = document.getElementById('imageUrlInput');
+            const btnApply = document.getElementById('btnApply');
+            const btnReset = document.getElementById('btnReset');
+            const tooltip = document.getElementById('tooltip');
+
+            // ==================== 状态变量 ====================
+            const DEFAULT_IMAGE_URL = ''; // 默认无外部图片，使用emoji
+            const STORAGE_KEY = 'desktop_pet_image_url';
+            const PET_SIZE_DESKTOP = 100;
+            const PET_SIZE_MOBILE = 75;
+            const PET_SIZE_SMALL = 60;
+
+            let currentImageUrl = '';
+            let isUsingExternalImage = false;
+            let isDragging = false;
+            let dragStartX = 0;
+            let dragStartY = 0;
+            let petStartLeft = 0;
+            let petStartTop = 0;
+            let isWalking = false;
+            let walkTimeout = null;
+            let resumeWalkTimeout = null;
+            let isPanelVisible = false;
+            let lastMoveDirection = 1; // 1=右, -1=左
+            let petX = 0;
+            let petY = 0;
+            let tooltipTimer = null;
+
+            // ==================== 初始化位置 ====================
+            function getPetSize() {
+                const w = window.innerWidth;
+                if (w <= 400) return PET_SIZE_SMALL;
+                if (w <= 768) return PET_SIZE_MOBILE;
+                return PET_SIZE_DESKTOP;
+            }
+
+            function initPosition() {
+                const size = getPetSize();
+                petX = window.innerWidth * 0.65;
+                petY = window.innerHeight * 0.45;
+                // 确保在安全区域内
+                petX = Math.max(size, Math.min(petX, window.innerWidth - size));
+                petY = Math.max(size + 40, Math.min(petY, window.innerHeight - size - 80));
+                applyPosition();
+            }
+
+            function applyPosition() {
+                petContainer.style.left = petX + 'px';
+                petContainer.style.top = petY + 'px';
+            }
+
+            // ==================== 图片管理 ====================
+            function loadSavedImageUrl() {
+                try {
+                    const saved = localStorage.getItem(STORAGE_KEY);
+                    if (saved !== null && saved.trim() !== '') {
+                        return saved.trim();
+                    }
+                } catch (e) {
+                    // localStorage 不可用
+                }
+                return DEFAULT_IMAGE_URL;
+            }
+
+            function saveImageUrl(url) {
+                try {
+                    if (url.trim() === '') {
+                        localStorage.removeItem(STORAGE_KEY);
+                    } else {
+                        localStorage.setItem(STORAGE_KEY, url.trim());
+                    }
+                } catch (e) {
+                    // localStorage 不可用
+                }
+            }
+
+            function applyImageUrl(url) {
+                const trimmedUrl = url.trim();
+                currentImageUrl = trimmedUrl;
+                imageUrlInput.value = trimmedUrl;
+                saveImageUrl(trimmedUrl);
+
+                if (trimmedUrl === '') {
+                    // 使用emoji
+                    petImage.style.display = 'none';
+                    petImage.src = '';
+                    petEmoji.style.display = 'flex';
+                    isUsingExternalImage = false;
+                    petContainer.classList.add('emoji-mode');
+                } else {
+                    // 尝试加载外部图片
+                    petEmoji.style.display = 'none';
+                    petImage.style.display = 'block';
+                    petImage.src = trimmedUrl;
+                    isUsingExternalImage = true;
+                    petContainer.classList.remove('emoji-mode');
+
+                    // 加载成功/失败处理
+                    petImage.onload = function() {
+                        petEmoji.style.display = 'none';
+                        petImage.style.display = 'block';
+                        isUsingExternalImage = true;
+                        showTooltipAtPet('✅ 图片加载成功！');
+                    };
+                    petImage.onerror = function() {
+                        petImage.style.display = 'none';
+                        petEmoji.style.display = 'flex';
+                        isUsingExternalImage = false;
+                        currentImageUrl = '';
+                        showTooltipAtPet('⚠️ 图片加载失败，已切换为默认宠物');
+                    };
+                }
+            }
+
+            function resetToDefault() {
+                applyImageUrl(DEFAULT_IMAGE_URL);
+                imageUrlInput.value = '';
+                showTooltipAtPet('🔄 已恢复默认宠物');
+            }
+
+            // ==================== 设置面板 ====================
+            function toggleSettingsPanel() {
+                isPanelVisible = !isPanelVisible;
+                if (isPanelVisible) {
+                    settingsPanel.classList.add('visible');
+                    settingsToggle.classList.add('active');
+                    imageUrlInput.value = currentImageUrl;
+                    setTimeout(() => imageUrlInput.focus(), 400);
+                } else {
+                    settingsPanel.classList.remove('visible');
+                    settingsToggle.classList.remove('active');
+                }
+            }
+
+            function closeSettingsPanel() {
+                if (isPanelVisible) {
+                    isPanelVisible = false;
+                    settingsPanel.classList.remove('visible');
+                    settingsToggle.classList.remove('active');
+                }
+            }
+
+            // ==================== 工具提示 ====================
+            function showTooltipAtPet(message) {
+                const rect = petContainer.getBoundingClientRect();
+                const size = getPetSize();
+                tooltip.textContent = message;
+                tooltip.style.left = (rect.left + size / 2) + 'px';
+                tooltip.style.top = (rect.top - 45) + 'px';
+                tooltip.style.transform = 'translate(-50%, 0)';
+                tooltip.classList.add('show');
+                clearTimeout(tooltipTimer);
+                tooltipTimer = setTimeout(() => {
+                    tooltip.classList.remove('show');
+                }, 2200);
+            }
+
+            function showTooltip(x, y, message) {
+                tooltip.textContent = message;
+                tooltip.style.left = x + 'px';
+                tooltip.style.top = (y - 40) + 'px';
+                tooltip.style.transform = 'translate(-50%, 0)';
+                tooltip.classList.add('show');
+                clearTimeout(tooltipTimer);
+                tooltipTimer = setTimeout(() => {
+                    tooltip.classList.remove('show');
+                }, 2000);
+            }
+
+            // ==================== 爱心特效 ====================
+            function spawnHearts(x, y, count = 6) {
+                const hearts = ['❤️', '💕', '💖', '💗', '💝', '💛', '🧡', '💓', '✨', '💫'];
+                const fragment = document.createDocumentFragment();
+
+                for (let i = 0; i < count; i++) {
+                    const heart = document.createElement('span');
+                    heart.className = 'heart-particle';
+                    heart.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+                    heart.style.left = (x - 10) + 'px';
+                    heart.style.top = (y - 20) + 'px';
+                    heart.style.setProperty('--drift-x', (Math.random() * 80 - 40) + 'px');
+                    heart.style.setProperty('--rotation', (Math.random() * 60 - 30) + 'deg');
+                    heart.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+                    heart.style.animationDelay = (Math.random() * 0.25) + 's';
+                    heart.style.fontSize = (14 + Math.random() * 22) + 'px';
+                    fragment.appendChild(heart);
+                }
+
+                heartsLayer.appendChild(fragment);
+
+                // 清理
+                const maxDuration = 2500;
+                setTimeout(() => {
+                    const particles = heartsLayer.querySelectorAll('.heart-particle');
+                    particles.forEach(p => {
+                        if (parseFloat(p.style.animationDelay || '0') * 1000 + 2000 < maxDuration + 500) {
+                            // 保留足够时间
+                        }
+                    });
+                }, 100);
+
+                // 定期清理所有完成的粒子
+                setTimeout(() => {
+                    const allParticles = heartsLayer.querySelectorAll('.heart-particle');
+                    allParticles.forEach(p => p.remove());
+                }, maxDuration + 400);
+            }
+
+            function spawnClickRipple(x, y) {
+                const ripple = document.createElement('div');
+                ripple.className = 'click-ripple';
+                ripple.style.left = (x - 5) + 'px';
+                ripple.style.top = (y - 5) + 'px';
+                heartsLayer.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 750);
+            }
+
+            // ==================== 拖动逻辑 ====================
+            function getEventPos(e) {
+                if (e.touches && e.touches.length > 0) {
+                    return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }
+                if (e.changedTouches && e.changedTouches.length > 0) {
+                    return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+                }
+                return { x: e.clientX, y: e.clientY };
+            }
+
+            function onDragStart(e) {
+                // 如果点击的是设置面板或按钮，不处理
+                if (e.target.closest('.settings-panel') || e.target.closest('.settings-toggle')) {
+                    return;
+                }
+
+                const pos = getEventPos(e);
+                const rect = petContainer.getBoundingClientRect();
+                const size = getPetSize();
+
+                // 检查点击是否在宠物区域内
+                const clickInPet =
+                    pos.x >= rect.left &&
+                    pos.x <= rect.left + size &&
+                    pos.y >= rect.top &&
+                    pos.y <= rect.top + size;
+
+                if (!clickInPet && !isDragging) return;
+
+                e.preventDefault();
+                isDragging = true;
+                dragStartX = pos.x;
+                dragStartY = pos.y;
+                petStartLeft = petX;
+                petStartTop = petY;
+
+                petContainer.classList.add('dragging');
+                petContainer.classList.remove('walking', 'idle');
+                clearTimeout(walkTimeout);
+                clearTimeout(resumeWalkTimeout);
+                isWalking = false;
+                closeSettingsPanel();
+            }
+
+            function onDragMove(e) {
+                if (!isDragging) return;
+                e.preventDefault();
+
+                const pos = getEventPos(e);
+                const dx = pos.x - dragStartX;
+                const dy = pos.y - dragStartY;
+                const size = getPetSize();
+
+                let newX = petStartLeft + dx;
+                let newY = petStartTop + dy;
+
+                // 边界约束
+                newX = Math.max(-size * 0.3, Math.min(newX, window.innerWidth - size * 0.7));
+                newY = Math.max(-size * 0.3, Math.min(newY, window.innerHeight - size * 0.7));
+
+                petX = newX;
+                petY = newY;
+                applyPosition();
+
+                // 根据拖动方向翻转
+                if (Math.abs(dx) > 3) {
+                    const direction = dx > 0 ? 1 : -1;
+                    if (direction !== lastMoveDirection) {
+                        lastMoveDirection = direction;
+                        updateFlip();
+                    }
+                }
+            }
+
+            function onDragEnd(e) {
+                if (!isDragging) return;
+                isDragging = false;
+                petContainer.classList.remove('dragging');
+
+                const pos = getEventPos(e);
+                const dx = Math.abs(pos.x - dragStartX);
+                const dy = Math.abs(pos.y - dragStartY);
+
+                // 如果几乎没有移动，视为点击
+                if (dx < 5 && dy < 5) {
+                    handlePetClick(pos.x, pos.y);
+                }
+
+                // 确保宠物在安全区域
+                const size = getPetSize();
+                petX = Math.max(0, Math.min(petX, window.innerWidth - size));
+                petY = Math.max(0, Math.min(petY, window.innerHeight - size));
+                applyPosition();
+
+                // 恢复自动漫步
+                scheduleResumeWalking();
+                setIdleState();
+            }
+
+            function handlePetClick(clientX, clientY) {
+                const size = getPetSize();
+                const rect = petContainer.getBoundingClientRect();
+                const relativeX = clientX - rect.left;
+                const relativeY = clientY - rect.top;
+
+                // 生成爱心
+                spawnHearts(relativeX, relativeY, 8);
+                spawnClickRipple(relativeX, relativeY);
+
+                // 弹跳效果
+                petWrapper.style.transform = 'scale(1.15)';
+                setTimeout(() => {
+                    petWrapper.style.transform = 'scale(0.9)';
+                    setTimeout(() => {
+                        petWrapper.style.transform = 'scale(1)';
+                    }, 150);
+                }, 120);
+
+                // 随机翻转
+                if (Math.random() < 0.35) {
+                    lastMoveDirection *= -1;
+                    updateFlip();
+                }
+            }
+
+            function updateFlip() {
+                if (lastMoveDirection === -1) {
+                    petContainer.classList.add('flip');
+                } else {
+                    petContainer.classList.remove('flip');
+                }
+            }
+
+            function setIdleState() {
+                petContainer.classList.remove('walking');
+                petContainer.classList.add('idle');
+            }
+
+            function setWalkingState() {
+                petContainer.classList.remove('idle');
+                petContainer.classList.add('walking');
+            }
+
+            // ==================== 自动漫步 ====================
+            function scheduleWalking() {
+                if (isDragging) return;
+                clearTimeout(walkTimeout);
+
+                const delay = 1800 + Math.random() * 4000; // 1.8-5.8秒随机间隔
+                walkTimeout = setTimeout(() => {
+                    if (isDragging) return;
+                    performWalk();
+                }, delay);
+            }
+
+            function performWalk() {
+                if (isDragging) return;
+                const size = getPetSize();
+                const margin = size * 1.2;
+                const maxX = window.innerWidth - margin;
+                const maxY = window.innerHeight - margin;
+                const minX = margin * 0.3;
+                const minY = margin * 0.6;
+
+                // 随机目标位置
+                const targetX = minX + Math.random() * (maxX - minX);
+                const targetY = minY + Math.random() * (maxY - minY);
+
+                // 判断方向
+                const dx = targetX - petX;
+                if (Math.abs(dx) > 10) {
+                    lastMoveDirection = dx > 0 ? 1 : -1;
+                    updateFlip();
+                }
+
+                // 计算距离，调整移动时间
+                const distance = Math.sqrt((targetX - petX) ** 2 + (targetY - petY) ** 2);
+                const duration = Math.max(0.6, Math.min(distance / 350, 2.5)); // 0.6-2.5秒
+
+                petContainer.style.transition =
+                    `left ${duration}s cubic-bezier(0.34, 1.56, 0.64, 1), top ${duration}s cubic-bezier(0.34, 1.56, 0.64, 1)`;
+
+                setWalkingState();
+                isWalking = true;
+
+                petX = targetX;
+                petY = targetY;
+                applyPosition();
+
+                // 移动结束后
+                const onTransitionEnd = () => {
+                    petContainer.removeEventListener('transitionend', onTransitionEnd);
+                    isWalking = false;
+                    setIdleState();
+                    petContainer.style.transition =
+                        'left 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), top 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                    scheduleWalking();
+                };
+                petContainer.addEventListener('transitionend', onTransitionEnd, { once: true });
+
+                // 安全超时（防止transitionend不触发）
+                clearTimeout(resumeWalkTimeout);
+                resumeWalkTimeout = setTimeout(() => {
+                    if (isWalking) {
+                        isWalking = false;
+                        setIdleState();
+                        petContainer.style.transition =
+                            'left 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), top 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                        scheduleWalking();
+                    }
+                }, duration * 1000 + 800);
+            }
+
+            function scheduleResumeWalking() {
+                clearTimeout(walkTimeout);
+                clearTimeout(resumeWalkTimeout);
+                isWalking = false;
+                const delay = 2500 + Math.random() * 3000;
+                resumeWalkTimeout = setTimeout(() => {
+                    setIdleState();
+                    scheduleWalking();
+                }, delay);
+            }
+
+            // ==================== 事件监听 ====================
+            // 鼠标事件
+            petContainer.addEventListener('mousedown', onDragStart);
+            document.addEventListener('mousemove', onDragMove);
+            document.addEventListener('mouseup', onDragEnd);
+
+            // 触摸事件
+            petContainer.addEventListener('touchstart', onDragStart, { passive: false });
+            document.addEventListener('touchmove', onDragMove, { passive: false });
+            document.addEventListener('touchend', onDragEnd);
+            document.addEventListener('touchcancel', onDragEnd);
+
+            // 设置面板
+            settingsToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleSettingsPanel();
+            });
+            btnClosePanel.addEventListener('click', (e) => {
+                e.stopPropagation();
+                closeSettingsPanel();
+            });
+            btnApply.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const url = imageUrlInput.value.trim();
+                applyImageUrl(url);
+                if (url !== '') {
+                    showTooltipAtPet('🎉 新宠物登场！');
+                } else {
+                    showTooltipAtPet('🐱 默认宠物回来啦~');
+                }
+            });
+            btnReset.addEventListener('click', (e) => {
+                e.stopPropagation();
+                resetToDefault();
+            });
+            imageUrlInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const url = imageUrlInput.value.trim();
+                    applyImageUrl(url);
+                    if (url !== '') {
+                        showTooltipAtPet('🎉 新宠物登场！');
+                    } else {
+                        showTooltipAtPet('🐱 默认宠物回来啦~');
+                    }
+                }
+                e.stopPropagation();
+            });
+
+            // 点击页面其他地方关闭设置面板
+            document.addEventListener('click', (e) => {
+                if (isPanelVisible &&
+                    !settingsPanel.contains(e.target) &&
+                    e.target !== settingsToggle &&
+                    !settingsToggle.contains(e.target)) {
+                    closeSettingsPanel();
+                }
+            });
+
+            // 窗口大小变化
+            let resizeDebounce = null;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeDebounce);
+                resizeDebounce = setTimeout(() => {
+                    const size = getPetSize();
+                    petX = Math.max(0, Math.min(petX, window.innerWidth - size));
+                    petY = Math.max(0, Math.min(petY, window.innerHeight - size));
+                    applyPosition();
+                }, 300);
+            });
+
+            // 键盘快捷键
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeSettingsPanel();
+                }
+                // Ctrl+Shift+P 打开设置
+                if (e.ctrlKey && e.shiftKey && e.key === 'P') {
+                    e.preventDefault();
+                    toggleSettingsPanel();
+                }
+            });
+
+            // 阻止宠物上的右键菜单（长按）
+            petContainer.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                // 右键切换设置面板
+                toggleSettingsPanel();
+            });
+
+            // ==================== 初始化 ====================
+            function init() {
+                initPosition();
+                const savedUrl = loadSavedImageUrl();
+                applyImageUrl(savedUrl);
+                imageUrlInput.value = savedUrl;
+                setIdleState();
+                scheduleWalking();
+
+                // 初始问候
+                setTimeout(() => {
+                    const size = getPetSize();
+                    const rect = petContainer.getBoundingClientRect();
+                    const cx = rect.left + size / 2;
+                    const cy = rect.top;
+                    showTooltip(cx, cy, '👋 嗨！拖动我试试~');
+                }, 600);
+
+                console.log('🐱 桌面宠物已就绪！');
+                console.log('  🖱️ 拖拽宠物 - 移动它');
+                console.log('  👆 点击宠物 - 爱心特效');
+                console.log('  🖱️ 右键宠物 - 打开设置');
+                console.log('  ⚙️ 右下角按钮 - 更换图片');
+                console.log('  ⌨️ Esc - 关闭设置面板');
+                console.log('  ⌨️ Ctrl+Shift+P - 切换设置');
+            }
+
+            init();
+        })();
+    </script>
+</body>
+</html>
