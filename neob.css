@@ -47,9 +47,9 @@ a:link {
     color: rgb(35,64,164);
 }
 a:visited {
-    color: rgb(35,64,164);
+    color: rgb(28,58,158);
 }
 a:hover,
 a:active {
-    color: rgb(30,60,160);
+    color: rgb(15,53,152);
 }
