@@ -1,0 +1,43 @@
+@import url("https://github.backroomswiki.cn/Old_BHL/css/liminal.css");
+@import url(https://github.backroomswiki.cn/Old_BHL/css/sidebar.css);
+
+:root {
+   --logo-image: url("https://cdn.jsdelivr.net/gh/ShuXiangYue/image/1787984575709.png");
+   --header-title: "AI小游戏库";
+   --header-subtitle: "games";
+}
+:root {
+    --white-monochrome: 238, 246, 255;
+    --pale-gray-monochrome: 229, 240, 255;
+    --light-gray-monochrome: 157, 174, 205;
+    --gray-monochrome: 69, 76, 105;
+    --black-monochrome: 20, 22, 40;
+
+    --body-width-on-desktop: 46.25rem;
+}
+
+body, #skrollr-body {
+    background: transparent;
+}
+
+#container-wrap-wrap > #extra-div-1 {
+    height: 100%;
+    background: linear-gradient(135deg, #31DDFF, #8052F0);
+    width: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: -1;
+}
+
+#main-content {
+    max-width: var(--body-width-on-desktop);
+    background: rgba(var(--white-monochrome), 0.5);
+    border-radius: 2rem;
+    padding: 2rem 1rem 0;
+    margin: 2rem auto;
+}
+
+#page-content {
+    padding: 0 1rem;
+}
