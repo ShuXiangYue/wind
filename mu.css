@@ -11,7 +11,7 @@
     --theme-base: "black-highlighter";
     --theme-id: "liminal";
     --theme-name: "Liminal Theme";
-    --logo-image: url("https://github.backroomswiki.cn/New_BHL/image/logo.svg");
+    --logo-image: url("https://cdn.jsdelivr.net/gh/ShuXiangYue/image/1791299830741.png");
     --header-title: "The Backrooms";
     --header-subtitle: "你曾经来过这里";
     --body-font: Inter, "Noto Sans SC", "Noto Sans TC", Arimo, Verdana, Geneva, sans-serif;
@@ -223,7 +223,7 @@ blockquote {
 }
 
 :root {
-   --logo-image: url("https://imgurl.diadi.cn/imgs/2026/10/9fdb6915cbd614a8.png");
+   --logo-image: url("https://cdn.jsdelivr.net/gh/ShuXiangYue/image/1791299830741.png");
    --header-title: "堆室";
    --header-subtitle: "The Multirooms";
 }
